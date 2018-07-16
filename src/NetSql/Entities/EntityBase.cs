@@ -3,10 +3,9 @@
     /// <summary>
     /// 实体基类
     /// </summary>
-    /// <typeparam name="T">主键类型</typeparam>
-    public class EntityBase<T> : Entity
+    public class EntityBase<TKey> : Entity
     {
-        public virtual T Id { get; set; }
+        public virtual TKey Id { get; set; }
     }
 
     /// <summary>
@@ -14,5 +13,6 @@
     /// </summary>
     public class EntityBase : EntityBase<int>
     {
+
     }
 }

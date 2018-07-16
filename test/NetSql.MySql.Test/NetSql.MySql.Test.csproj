@@ -15,7 +15,18 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\NetSql.MySql\NetSql.MySql.csproj" />
+    <ProjectReference Include="..\..\src\NetSql.SQLite\NetSql.SQLite.csproj" />
     <ProjectReference Include="..\NetSql.Test.Common\NetSql.Test.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Database\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Database\Test.db">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

@@ -1,17 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using NetSql.Test.Common.Model;
+﻿using NetSql.Test.Common.Model;
 
 namespace NetSql.MySql.Test
 {
-    public class BlogDbContext : NetSqlContext
+    public class BlogDbContext : NetSqlDbContext
     {
-        public BlogDbContext() : base("ConnectionString")
-        {
-
-        }
-
         public IDbSet<Article> Articles { get; set; }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            //optionsBuilder.UseSqlServer("Server=10.32.1.183;Initial Catalog=Test;User ID=sa;Password=oldli!@#123;MultipleActiveResultSets=True");
+            //optionsBuilder.UseMySql("Server=localhost;Database=Test;Uid=root;Pwd=oldli!@#123;Allow User Variables=True;charset=utf8;");
+            optionsBuilder.UseSQLite("Filename=./Database/Test.db");
+        }
     }
 }

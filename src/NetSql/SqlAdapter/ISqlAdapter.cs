@@ -8,6 +8,8 @@ namespace NetSql.SqlAdapter
     /// </summary>
     public interface ISqlAdapter
     {
+        #region ==属性==
+
         /// <summary>
         /// 左引号
         /// </summary>
@@ -27,6 +29,10 @@ namespace NetSql.SqlAdapter
         /// 获取新增ID的SQL语句
         /// </summary>
         string IdentitySql { get; }
+
+        #endregion
+
+        #region ==方法==
 
         /// <summary>
         /// 给定的值附加引号
@@ -74,6 +80,27 @@ namespace NetSql.SqlAdapter
         void AppendParameterWithValue(StringBuilder sb, string parameterName);
 
         /// <summary>
+        /// 附加查询条件
+        /// </summary>
+        /// <param name="queryWhere"></param>
+        /// <returns></returns>
+        string AppendQueryWhere(string queryWhere);
+
+        /// <summary>
+        /// 附加查询条件
+        /// </summary>
+        /// <param name="sb"></param>
+        /// <param name="queryWhere">查询条件</param>
+        void AppendQueryWhere(StringBuilder sb, string queryWhere);
+
+        /// <summary>
+        /// 附加排序字段
+        /// </summary>
+        /// <param name="sb"></param>
+        /// <param name="paging"></param>
+        void AppendOrderBy(StringBuilder sb, Paging paging);
+
+        /// <summary>
         /// 生成分页语句
         /// </summary>
         /// <param name="tableName">表名</param>
@@ -81,5 +108,8 @@ namespace NetSql.SqlAdapter
         /// <param name="paging">分页类</param>
         /// <returns></returns>
         string GeneratePagingSql(string tableName, string queryWhere, Paging paging);
+
+        #endregion
+
     }
 }

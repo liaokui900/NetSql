@@ -12,8 +12,7 @@ namespace NetSql.Internal
         /// </summary>
         /// <param name="property"></param>
         /// <returns></returns>
-        public static bool IsStatic(this PropertyInfo property)
-            => (property.GetMethod ?? property.SetMethod).IsStatic;
+        public static bool IsStatic(this PropertyInfo property) => (property.GetMethod ?? property.SetMethod).IsStatic;
 
     }
 }
