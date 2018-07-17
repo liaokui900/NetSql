@@ -249,15 +249,5 @@ public class Article : EntityBase
      public string Title { get; set; }
 }
 ```
-## 3、指定列名
-使用``` ColumnAttribute ``` 特性可以为实体的属性指定列名
-``` C#
-public class Article : EntityBase
-{
-     [Column("title")]
-     public string Title { get; set; }
-}
-```
-
 # 未完成
 根据lamdba表达式执行增删改查
