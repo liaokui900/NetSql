@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
 using NetSql.Entities;
 using NetSql.Enums;
+using NetSql.Expressions;
 using NetSql.Internal;
+using NetSql.Pagination;
 using NetSql.SqlAdapter;
 using DbType = NetSql.Enums.DbType;
 
@@ -25,6 +28,8 @@ namespace NetSql
 
         private readonly ISqlAdapter _sqlAdapter;
 
+        private readonly IExpressionContext<TEntity> _expressionContext;
+
         #endregion
 
         #region ==构造函数==
@@ -33,6 +38,7 @@ namespace NetSql
         {
             _sqlAdapter = sqlAdapter;
             _context = context;
+            _expressionContext = new ExpressionContext<TEntity>(sqlAdapter);
             _descriptor = new EntityDescriptor<TEntity>();
             _sqlStatement = new EntitySqlStatement<TEntity>(_descriptor, sqlAdapter);
         }
@@ -116,14 +122,28 @@ namespace NetSql
             }
         }
 
-        public async Task<bool> RemoveAsync(dynamic id, IDbTransaction transaction = null)
+        public Task<int> RemoveAsync(dynamic id, IDbTransaction transaction = null)
         {
             PrimaryKeyValidate(id);
 
             var dynParms = new DynamicParameters();
             dynParms.Add(_sqlAdapter.AppendParameter("Id"), id);
 
-            return await GetCon(transaction).ExecuteAsync(_sqlStatement.DeleteSingle, dynParms, transaction) > 0;
+            return GetCon(transaction).ExecuteAsync(_sqlStatement.DeleteSingle, dynParms, transaction);
+        }
+
+        public Task<int> RemoveAsync(Expression<Func<TEntity, bool>> exp, IDbTransaction transaction = null)
+        {
+            Check.NotNull(exp, nameof(exp));
+
+            var sqlWhere = _expressionContext.ToSql(exp);
+            if (string.IsNullOrWhiteSpace(sqlWhere))
+                throw new ArgumentException("无效的表达式", nameof(exp));
+
+            var sql = new StringBuilder(_sqlStatement.Delete);
+            _sqlAdapter.AppendQueryWhere(sql, sqlWhere);
+
+            return GetCon(transaction).ExecuteAsync(sql.ToString(), null, transaction);
         }
 
         public Task<bool> BatchRemoveAsync<T>(IList<T> idList, IDbTransaction transaction = null)
@@ -140,14 +160,26 @@ namespace NetSql
             return DeleteWhereAsync(queryWhere, null, transaction);
         }
 
-        public async Task<bool> UpdateAsync(TEntity entity, IDbTransaction transaction = null)
+        public Task<int> UpdateAsync(TEntity entity, IDbTransaction transaction = null)
         {
             Check.NotNull(entity, nameof(entity));
 
             if (_descriptor.PrimaryKeyType == PrimaryKeyType.NoPrimaryKey)
                 throw new ArgumentException("没有主键的实体对象无法使用该方法", nameof(entity));
 
-            return await GetCon(transaction).ExecuteAsync(_sqlStatement.UpdateSingle, entity, transaction) > 0;
+            return GetCon(transaction).ExecuteAsync(_sqlStatement.UpdateSingle, entity, transaction);
+        }
+
+        public Task<int> UpdateAsync(Expression<Func<TEntity, bool>> whereExp, Expression<Func<TEntity, TEntity>> updateEntity, IDbTransaction transaction = null)
+        {
+            Check.NotNull(whereExp, nameof(whereExp));
+            Check.NotNull(updateEntity, nameof(updateEntity));
+
+            var sql = new StringBuilder(_sqlStatement.Update);
+            sql.Append(_expressionContext.ToSql(updateEntity));
+            _sqlAdapter.AppendQueryWhere(sql, _expressionContext.ToSql(whereExp));
+
+            return GetCon(transaction).ExecuteAsync(sql.ToString(), transaction: transaction);
         }
 
         public Task<bool> BatchUpdateAsync(IList<TEntity> entityList, IDbTransaction transaction = null)
@@ -199,6 +231,11 @@ namespace NetSql
             dynParms.Add(_sqlAdapter.AppendParameter("Id"), id);
 
             return GetCon(transaction).QuerySingleOrDefaultAsync<TEntity>(_sqlStatement.Get, dynParms, transaction);
+        }
+
+        public Task<IEnumerable<TEntity>> Find(Expression<Func<TEntity, bool>> whereExp, Paging paging, IDbTransaction transaction = null)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion
@@ -334,17 +371,7 @@ namespace NetSql
         {
             var sb = new StringBuilder(_sqlStatement.Insert);
 
-            foreach (var p in _descriptor.Properties)
-            {
-                if (p.PropertyType == typeof(string) || p.PropertyType == typeof(DateTime))
-                    sb.Replace(_sqlAdapter.AppendParameter(p.Name), $"'{p.GetValue(entity)}'");
-                else if (p.PropertyType == typeof(Enum))
-                    sb.Replace(_sqlAdapter.AppendParameter(p.Name), ((int)p.GetValue(entity)).ToString());
-                else if (p.PropertyType == typeof(bool))
-                    sb.Replace(_sqlAdapter.AppendParameter(p.Name), ((bool)p.GetValue(entity)) ? "1" : "0");
-                else
-                    sb.Replace(_sqlAdapter.AppendParameter(p.Name), p.GetValue(entity).ToString());
-            }
+            ReplaceParameter(sb, entity);
 
             return sb.ToString();
         }
@@ -430,22 +457,32 @@ namespace NetSql
         {
             var sb = new StringBuilder(_sqlStatement.UpdateSingle);
 
-            foreach (var p in _descriptor.Properties)
-            {
-                if (p.PropertyType == typeof(string) || p.PropertyType == typeof(DateTime))
-                    sb.Replace(_sqlAdapter.AppendParameter(p.Name), $"'{p.GetValue(entity)}'");
-                else if (p.PropertyType == typeof(Enum))
-                    sb.Replace(_sqlAdapter.AppendParameter(p.Name), ((int)p.GetValue(entity)).ToString());
-                else if (p.PropertyType == typeof(bool))
-                    sb.Replace(_sqlAdapter.AppendParameter(p.Name), ((bool)p.GetValue(entity)) ? "1" : "0");
-                else
-                    sb.Replace(_sqlAdapter.AppendParameter(p.Name), p.GetValue(entity).ToString());
-            }
+            ReplaceParameter(sb, entity);
 
             return sb.ToString();
         }
 
         #endregion
+
+        /// <summary>
+        /// 替换语句中的参数
+        /// </summary>
+        /// <param name="sb"></param>
+        /// <param name="entity"></param>
+        private void ReplaceParameter(StringBuilder sb, TEntity entity)
+        {
+            foreach (var p in _descriptor.Properties)
+            {
+                if (p.PropertyType == typeof(string) || p.PropertyType == typeof(DateTime) || p.PropertyType == typeof(char))
+                    sb.Replace(_sqlAdapter.AppendParameter(p.Name), $"'{p.GetValue(entity)}'");
+                else if (p.PropertyType.IsEnum)
+                    sb.Replace(_sqlAdapter.AppendParameter(p.Name), p.GetValue(entity).ToInt().ToString());
+                else if (p.PropertyType == typeof(bool))
+                    sb.Replace(_sqlAdapter.AppendParameter(p.Name), p.GetValue(entity).ToBool().ToIntString());
+                else
+                    sb.Replace(_sqlAdapter.AppendParameter(p.Name), p.GetValue(entity).ToString());
+            }
+        }
 
         #endregion
     }

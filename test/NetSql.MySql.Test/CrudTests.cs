@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
+using NetSql.Internal;
 using NetSql.Test.Common.Model;
 using Xunit;
 
@@ -18,10 +17,12 @@ namespace NetSql.MySql.Test
             var article = new Article
             {
                 Title = "test",
+                Category = Category.Blog,
                 Summary = "这是一篇测试文章",
                 Body = "这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章",
                 ReadCount = 10,
-                IsDeleted = true
+                IsDeleted = true,
+                CreatedTime = DateTime.Now
             };
 
             var b = _dbContext.Articles.AddAsync(article).Result;
@@ -38,10 +39,12 @@ namespace NetSql.MySql.Test
                 list.Add(new Article
                 {
                     Title = "test" + i,
+                    Category = i % 3 == 1 ? Category.Blog : Category.Movie,
                     Summary = "这是一篇测试文章",
                     Body = "这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章",
                     ReadCount = 10,
-                    IsDeleted = i % 2 == 0
+                    IsDeleted = i % 2 == 0,
+                    CreatedTime = DateTime.Now
                 });
             }
 
@@ -55,10 +58,12 @@ namespace NetSql.MySql.Test
                 list.Add(new Article
                 {
                     Title = "test" + i,
+                    Category = i % 3 == 1 ? Category.Blog : Category.Movie,
                     Summary = "这是一篇测试文章",
                     Body = "这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章",
                     ReadCount = 10,
-                    IsDeleted = i % 2 == 0
+                    IsDeleted = i % 2 == 0,
+                    CreatedTime = DateTime.Now
                 });
             }
 
@@ -88,7 +93,15 @@ namespace NetSql.MySql.Test
         {
             var b = _dbContext.Articles.RemoveAsync(2).Result;
 
-            Assert.True(b);
+            Assert.True(b > 0);
+        }
+
+        [Fact]
+        public void RemoveByExpressionTest()
+        {
+            var b = _dbContext.Articles.RemoveAsync(m => m.IsDeleted).Result;
+
+            Assert.True(b > 0);
         }
 
         [Fact]
@@ -134,7 +147,18 @@ namespace NetSql.MySql.Test
 
             var b = _dbContext.Articles.UpdateAsync(entity).Result;
 
-            Assert.True(b);
+            Assert.True(b > 0);
+        }
+
+        [Fact]
+        public void UpdateByExpressionTest()
+        {
+            var b = _dbContext.Articles.UpdateAsync(m => m.Id > 10, n => new Article
+            {
+                Title = "哈哈"
+            }).Result;
+
+            Assert.True(b > 0);
         }
 
         [Fact]

@@ -115,27 +115,21 @@ namespace NetSql.Entities
             _sqlAdapter.AppendQuote(sb, _descriptor.TableName);
             sb.Append(" SET ");
 
-            var properties = _descriptor.PrimaryKeyType == PrimaryKeyType.NoPrimaryKey
-                ? _descriptor.Properties
-                : _descriptor.Properties.Where(m => m != _descriptor.PrimaryKey);
-
-            foreach (var p in properties)
-            {
-                _sqlAdapter.AppendParameterWithValue(sb, p.Name);
-                sb.Append(",");
-            }
-
-            sb.Remove(sb.Length - 1, 1);
-
             Update = sb.ToString();
 
             if (_descriptor.PrimaryKeyType != PrimaryKeyType.NoPrimaryKey)
             {
-                sb.Append(" WHERE ");
+                var properties = _descriptor.Properties.Where(m => m != _descriptor.PrimaryKey);
 
-                _sqlAdapter.AppendParameterWithValue(sb, "Id");
+                foreach (var p in properties)
+                {
+                    _sqlAdapter.AppendParameterWithValue(sb, p.Name);
+                    sb.Append(",");
+                }
 
-                sb.Append(";");
+                sb.Remove(sb.Length - 1, 1);
+
+                sb.AppendFormat(" WHERE {0};", _sqlAdapter.AppendParameterWithValue("Id"));
 
                 UpdateSingle = sb.ToString();
             }
