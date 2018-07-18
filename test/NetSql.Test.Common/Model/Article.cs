@@ -1,11 +1,13 @@
 ﻿using System;
 using NetSql.Entities;
+using NetSql.Mapper;
 
 namespace NetSql.Test.Common.Model
 {
     public class Article : EntityBase
     {
-        public string Title { get; set; }
+        [Column("Title")]
+        public string Title1 { get; set; }
 
         public string Summary { get; set; }
 

@@ -22,13 +22,13 @@ namespace NetSql
 
         private readonly NetSqlDbContext _context;
 
-        private readonly EntityDescriptor<TEntity> _descriptor;
+        private readonly IEntityDescriptor _descriptor;
 
-        private readonly EntitySqlStatement<TEntity> _sqlStatement;
+        private readonly EntitySqlStatement _sqlStatement;
 
         private readonly ISqlAdapter _sqlAdapter;
 
-        private readonly IExpressionContext<TEntity> _expressionContext;
+        private readonly IExpressionContext _expressionContext;
 
         #endregion
 
@@ -38,9 +38,9 @@ namespace NetSql
         {
             _sqlAdapter = sqlAdapter;
             _context = context;
-            _expressionContext = new ExpressionContext<TEntity>(sqlAdapter);
             _descriptor = new EntityDescriptor<TEntity>();
-            _sqlStatement = new EntitySqlStatement<TEntity>(_descriptor, sqlAdapter);
+            _sqlStatement = new EntitySqlStatement(_descriptor, sqlAdapter);
+            _expressionContext = new ExpressionContext(sqlAdapter, _descriptor);
         }
 
         #endregion
@@ -176,7 +176,9 @@ namespace NetSql
             Check.NotNull(updateEntity, nameof(updateEntity));
 
             var sql = new StringBuilder(_sqlStatement.Update);
+
             sql.Append(_expressionContext.ToSql(updateEntity));
+
             _sqlAdapter.AppendQueryWhere(sql, _expressionContext.ToSql(whereExp));
 
             return GetCon(transaction).ExecuteAsync(sql.ToString(), transaction: transaction);
@@ -471,16 +473,18 @@ namespace NetSql
         /// <param name="entity"></param>
         private void ReplaceParameter(StringBuilder sb, TEntity entity)
         {
-            foreach (var p in _descriptor.Properties)
+            foreach (var col in _descriptor.Columns)
             {
-                if (p.PropertyType == typeof(string) || p.PropertyType == typeof(DateTime) || p.PropertyType == typeof(char))
-                    sb.Replace(_sqlAdapter.AppendParameter(p.Name), $"'{p.GetValue(entity)}'");
-                else if (p.PropertyType.IsEnum)
-                    sb.Replace(_sqlAdapter.AppendParameter(p.Name), p.GetValue(entity).ToInt().ToString());
-                else if (p.PropertyType == typeof(bool))
-                    sb.Replace(_sqlAdapter.AppendParameter(p.Name), p.GetValue(entity).ToBool().ToIntString());
+                var name = col.PropertyInfo.Name;
+
+                if (col.PropertyType == typeof(string) || col.PropertyType == typeof(DateTime) || col.PropertyType == typeof(char))
+                    sb.Replace(_sqlAdapter.AppendParameter(name), $"'{col.GetValue(entity)}'");
+                else if (col.PropertyType.IsEnum)
+                    sb.Replace(_sqlAdapter.AppendParameter(name), col.GetValue(entity).ToInt().ToString());
+                else if (col.PropertyType == typeof(bool))
+                    sb.Replace(_sqlAdapter.AppendParameter(name), col.GetValue(entity).ToBool().ToIntString());
                 else
-                    sb.Replace(_sqlAdapter.AppendParameter(p.Name), p.GetValue(entity).ToString());
+                    sb.Replace(_sqlAdapter.AppendParameter(name), col.GetValue(entity).ToString());
             }
         }
 

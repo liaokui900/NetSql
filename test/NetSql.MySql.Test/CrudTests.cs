@@ -16,7 +16,7 @@ namespace NetSql.MySql.Test
         {
             var article = new Article
             {
-                Title = "test",
+                Title1 = "test",
                 Category = Category.Blog,
                 Summary = "这是一篇测试文章",
                 Body = "这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章",
@@ -38,7 +38,7 @@ namespace NetSql.MySql.Test
             {
                 list.Add(new Article
                 {
-                    Title = "test" + i,
+                    Title1 = "test" + i,
                     Category = i % 3 == 1 ? Category.Blog : Category.Movie,
                     Summary = "这是一篇测试文章",
                     Body = "这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章",
@@ -57,7 +57,7 @@ namespace NetSql.MySql.Test
             {
                 list.Add(new Article
                 {
-                    Title = "test" + i,
+                    Title1 = "test" + i,
                     Category = i % 3 == 1 ? Category.Blog : Category.Movie,
                     Summary = "这是一篇测试文章",
                     Body = "这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章",
@@ -99,7 +99,7 @@ namespace NetSql.MySql.Test
         [Fact]
         public void RemoveByExpressionTest()
         {
-            var b = _dbContext.Articles.RemoveAsync(m => m.IsDeleted).Result;
+            var b = _dbContext.Articles.RemoveAsync(m => m.Title1 == "hahaha").Result;
 
             Assert.True(b > 0);
         }
@@ -141,7 +141,7 @@ namespace NetSql.MySql.Test
             var entity = new Article
             {
                 Id = 1,
-                Title = "更新测试",
+                Title1 = "更新测试",
                 IsDeleted = false
             };
 
@@ -153,9 +153,12 @@ namespace NetSql.MySql.Test
         [Fact]
         public void UpdateByExpressionTest()
         {
+            BatchAddTest();
+
             var b = _dbContext.Articles.UpdateAsync(m => m.Id > 10, n => new Article
             {
-                Title = "哈哈"
+                Title1 = "哈哈",
+                ReadCount = 100
             }).Result;
 
             Assert.True(b > 0);
@@ -172,7 +175,7 @@ namespace NetSql.MySql.Test
                 list.Add(new Article
                 {
                     Id = i,
-                    Title = "更新测试" + i,
+                    Title1 = "更新测试" + i,
                     Summary = "更新测试这是一篇测试文章",
                     Body = "更新测试这一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章",
                     ReadCount = 20,

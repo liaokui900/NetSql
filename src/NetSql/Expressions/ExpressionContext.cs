@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using NetSql.Entities;
@@ -7,15 +8,15 @@ using NetSql.SqlAdapter;
 
 namespace NetSql.Expressions
 {
-    internal class ExpressionContext<TEntity> : IExpressionContext<TEntity> where TEntity : Entity, new()
+    internal class ExpressionContext : IExpressionContext
     {
+        private readonly IEntityDescriptor _entityDescriptor;
         private readonly ISqlAdapter _sqlAdapter;
-        private readonly StringBuilder _sqlBuilder;
 
-        public ExpressionContext(ISqlAdapter sqlAdapter)
+        public ExpressionContext(ISqlAdapter sqlAdapter, IEntityDescriptor entityDescriptor)
         {
             _sqlAdapter = sqlAdapter;
-            _sqlBuilder = new StringBuilder();
+            _entityDescriptor = entityDescriptor;
         }
 
         /// <summary>
@@ -23,46 +24,32 @@ namespace NetSql.Expressions
         /// </summary>
         /// <param name="exp"></param>
         /// <returns></returns>
-        public string ToSql(Expression<Func<TEntity, bool>> exp)
+        public string ToSql(Expression exp)
         {
             if (exp == null)
                 return string.Empty;
 
-            Resolve(exp);
+            var sqlBuilder = new StringBuilder();
 
-            if (_sqlBuilder[0] == '(' && _sqlBuilder[_sqlBuilder.Length - 1] == ')')
+            Resolve(exp, sqlBuilder);
+
+            if (sqlBuilder[0] == '(' && sqlBuilder[sqlBuilder.Length - 1] == ')')
             {
-                _sqlBuilder.Remove(0, 1);
-                _sqlBuilder.Remove(_sqlBuilder.Length - 2, 1);
+                sqlBuilder.Remove(0, 1);
+                sqlBuilder.Remove(sqlBuilder.Length - 1, 1);
             }
 
-            return _sqlBuilder.ToString();
-        }
-
-        public string ToSql(Expression<Func<TEntity, TEntity>> exp)
-        {
-            if (exp == null)
-                return string.Empty;
-
-            Resolve(exp);
-
-            if (_sqlBuilder[0] == '(' && _sqlBuilder[_sqlBuilder.Length - 1] == ')')
-            {
-                _sqlBuilder.Remove(0, 1);
-                _sqlBuilder.Remove(_sqlBuilder.Length - 2, 1);
-            }
-
-            return _sqlBuilder.ToString();
+            return sqlBuilder.ToString();
         }
 
         #region ==表达式解析==
 
-        private void Resolve(Expression exp)
+        private void Resolve(Expression exp, StringBuilder sqlBuilder)
         {
             switch (exp.NodeType)
             {
                 case ExpressionType.Lambda:
-                    LambdaResolve(exp);
+                    LambdaResolve(exp, sqlBuilder);
                     break;
                 case ExpressionType.Add:
                 case ExpressionType.AddChecked:
@@ -87,115 +74,120 @@ namespace NetSql.Expressions
                 case ExpressionType.RightShift:
                 case ExpressionType.LeftShift:
                 case ExpressionType.ExclusiveOr:
-                    BinaryResolve(exp);
+                    BinaryResolve(exp, sqlBuilder);
                     break;
                 case ExpressionType.Constant:
-                    ConstantResolve(exp);
+                    ConstantResolve(exp, sqlBuilder);
                     break;
                 case ExpressionType.MemberAccess:
-                    MemberAccessResolve(exp);
+                    MemberAccessResolve(exp, sqlBuilder);
                     break;
                 case ExpressionType.Convert:
                 case ExpressionType.ConvertChecked:
-                    UnaryResolve(exp);
+                    UnaryResolve(exp, sqlBuilder);
                     break;
                 case ExpressionType.Call:
                 case ExpressionType.New:
-                    DynamicInvokeResolve(exp);
+                    DynamicInvokeResolve(exp, sqlBuilder);
                     break;
                 case ExpressionType.Not:
-                    NotResolve(exp);
+                    NotResolve(exp, sqlBuilder);
+                    break;
+                case ExpressionType.MemberInit:
+                    MemberInitResolve(exp, sqlBuilder);
                     break;
             }
         }
 
-        private void LambdaResolve(Expression exp)
+        private void LambdaResolve(Expression exp, StringBuilder sqlBuilder)
         {
             if (exp == null || !(exp is LambdaExpression lambdaExp))
                 return;
 
-            Resolve(lambdaExp.Body);
+            Resolve(lambdaExp.Body, sqlBuilder);
         }
 
-        private void BinaryResolve(Expression exp)
+        private void BinaryResolve(Expression exp, StringBuilder sqlBuilder)
         {
             if (exp == null || !(exp is BinaryExpression binaryExp))
                 return;
 
-            _sqlBuilder.Append("(");
+            sqlBuilder.Append("(");
 
-            Resolve(binaryExp.Left);
+            Resolve(binaryExp.Left, sqlBuilder);
 
             switch (binaryExp.NodeType)
             {
                 case ExpressionType.And:
                 case ExpressionType.AndAlso:
-                    _sqlBuilder.Append(" AND ");
+                    sqlBuilder.Append(" AND ");
                     break;
                 case ExpressionType.GreaterThan:
-                    _sqlBuilder.Append(" > ");
+                    sqlBuilder.Append(" > ");
                     break;
                 case ExpressionType.GreaterThanOrEqual:
-                    _sqlBuilder.Append(" >= ");
+                    sqlBuilder.Append(" >= ");
                     break;
                 case ExpressionType.LessThan:
-                    _sqlBuilder.Append(" < ");
+                    sqlBuilder.Append(" < ");
                     break;
                 case ExpressionType.LessThanOrEqual:
-                    _sqlBuilder.Append(" <= ");
+                    sqlBuilder.Append(" <= ");
                     break;
                 case ExpressionType.Equal:
-                    _sqlBuilder.Append(" = ");
+                    sqlBuilder.Append(" = ");
                     break;
                 case ExpressionType.OrElse:
                 case ExpressionType.Or:
-                    _sqlBuilder.Append(" OR ");
+                    sqlBuilder.Append(" OR ");
                     break;
             }
 
-            Resolve(binaryExp.Right);
+            Resolve(binaryExp.Right, sqlBuilder);
 
-            _sqlBuilder.Append(")");
+            sqlBuilder.Append(")");
         }
 
-        private void ConstantResolve(Expression exp)
+        private void ConstantResolve(Expression exp, StringBuilder sqlBuilder)
         {
             if (exp == null || !(exp is ConstantExpression constantExp))
                 return;
 
             if (exp.Type == typeof(string))
-                _sqlAdapter.AppendQuote(_sqlBuilder, constantExp.Value.ToString());
+                sqlBuilder.AppendFormat("'{0}'", constantExp.Value);
             else if (exp.Type == typeof(bool))
-                _sqlAdapter.AppendQuote(_sqlBuilder, constantExp.Value.ToBool().ToIntString());
+                sqlBuilder.AppendFormat("{0}", constantExp.Value.ToBool().ToIntString());
             else
-                _sqlBuilder.Append(constantExp.Value);
+                sqlBuilder.Append(constantExp.Value);
         }
 
-        private void MemberAccessResolve(Expression exp)
+        private void MemberAccessResolve(Expression exp, StringBuilder sqlBuilder)
         {
             if (exp == null || !(exp is MemberExpression memberExp))
                 return;
 
             if (memberExp.Expression != null && memberExp.Expression.NodeType == ExpressionType.Parameter)
             {
-                _sqlAdapter.AppendQuote(_sqlBuilder, memberExp.Member.Name);
+                var col = _entityDescriptor.Columns.First(c => c.PropertyInfo.Name.Equals(memberExp.Member.Name));
+
+                _sqlAdapter.AppendQuote(sqlBuilder, col.Name);
             }
             else
             {
                 //对于非实体属性的成员，如外部变量等
-                DynamicInvokeResolve(exp);
+                DynamicInvokeResolve(exp, sqlBuilder);
             }
         }
 
-        private void UnaryResolve(Expression exp)
+        private void UnaryResolve(Expression exp, StringBuilder sqlBuilder)
         {
             if (exp == null || !(exp is UnaryExpression unaryExp))
                 return;
 
-            Resolve(unaryExp.Operand);
+            Resolve(unaryExp.Operand, sqlBuilder);
         }
 
-        private void DynamicInvokeResolve(Expression exp)
+        private void DynamicInvokeResolve(Expression exp, StringBuilder sqlBuilder)
         {
             if (exp == null)
                 return;
@@ -204,23 +196,49 @@ namespace NetSql.Expressions
             var value = f.DynamicInvoke();
 
             if (exp.Type == typeof(DateTime) || exp.Type == typeof(string) || exp.Type == typeof(char))
-                _sqlBuilder.AppendFormat("'{0}'", value);
+                sqlBuilder.AppendFormat("'{0}'", value);
             else if (exp.Type.IsEnum)
-                _sqlBuilder.AppendFormat("{0}", value.ToInt());
+                sqlBuilder.AppendFormat("{0}", value.ToInt());
             else
-                _sqlBuilder.AppendFormat("{0}", value);
+                sqlBuilder.AppendFormat("{0}", value);
         }
 
-        private void NotResolve(Expression exp)
+        private void NotResolve(Expression exp, StringBuilder sqlBuilder)
         {
             if (exp == null)
                 return;
 
-            _sqlBuilder.Append("(");
+            sqlBuilder.Append("(");
 
-            UnaryResolve(exp);
+            UnaryResolve(exp, sqlBuilder);
 
-            _sqlBuilder.Append(" = 0)");
+            sqlBuilder.Append(" = 0)");
+        }
+
+        private void MemberInitResolve(Expression exp, StringBuilder sqlBuilder)
+        {
+            if (exp == null || !(exp is MemberInitExpression initExp) || !initExp.Bindings.Any())
+                return;
+
+            foreach (var binding in initExp.Bindings)
+            {
+                if (binding is MemberAssignment assignment)
+                {
+                    var col = _entityDescriptor.Columns.FirstOrDefault(c => c.PropertyInfo.Name.Equals(assignment.Member.Name));
+
+                    if (col != null)
+                    {
+                        sqlBuilder.AppendFormat("{0}=", col.Name);
+                        Resolve(assignment.Expression, sqlBuilder);
+                        sqlBuilder.Append(",");
+                    }
+                }
+            }
+
+            if (sqlBuilder.Length > 0)
+            {
+                sqlBuilder.Remove(sqlBuilder.Length - 1, 1);
+            }
         }
 
         #endregion

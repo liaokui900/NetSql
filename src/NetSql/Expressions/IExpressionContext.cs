@@ -1,13 +1,9 @@
-﻿using System;
-using System.Linq.Expressions;
-using NetSql.Entities;
+﻿using System.Linq.Expressions;
 
 namespace NetSql.Expressions
 {
-    internal interface IExpressionContext<TEntity> where TEntity : Entity, new()
+    internal interface IExpressionContext
     {
-        string ToSql(Expression<Func<TEntity, bool>> exp);
-
-        string ToSql(Expression<Func<TEntity, TEntity>> exp);
+        string ToSql(Expression exp);
     }
 }

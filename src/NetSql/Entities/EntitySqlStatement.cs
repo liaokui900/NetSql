@@ -5,12 +5,12 @@ using NetSql.SqlAdapter;
 
 namespace NetSql.Entities
 {
-    internal class EntitySqlStatement<TEntity> where TEntity : Entity, new()
+    internal class EntitySqlStatement
     {
         private readonly ISqlAdapter _sqlAdapter;
-        private readonly EntityDescriptor<TEntity> _descriptor;
+        private readonly IEntityDescriptor _descriptor;
 
-        public EntitySqlStatement(EntityDescriptor<TEntity> descriptor, ISqlAdapter sqlAdapter)
+        public EntitySqlStatement(IEntityDescriptor descriptor, ISqlAdapter sqlAdapter)
         {
             _descriptor = descriptor;
             _sqlAdapter = sqlAdapter;
@@ -70,17 +70,16 @@ namespace NetSql.Entities
 
             var valuesSql = new StringBuilder(") VALUES(");
 
-            foreach (var p in _descriptor.Properties)
+            foreach (var col in _descriptor.Columns)
             {
                 //排除自增主键
-                if ((_descriptor.PrimaryKeyType == PrimaryKeyType.Int ||
-                     _descriptor.PrimaryKeyType == PrimaryKeyType.Long) && p == _descriptor.PrimaryKey)
+                if (col.IsPrimaryKey && (_descriptor.PrimaryKeyType == PrimaryKeyType.Int || _descriptor.PrimaryKeyType == PrimaryKeyType.Long))
                     continue;
 
-                _sqlAdapter.AppendQuote(sb, p.Name);
+                _sqlAdapter.AppendQuote(sb, col.Name);
                 sb.Append(",");
 
-                _sqlAdapter.AppendParameter(valuesSql, p.Name);
+                _sqlAdapter.AppendParameter(valuesSql, col.PropertyInfo.Name);
                 valuesSql.Append(",");
             }
 
@@ -102,7 +101,7 @@ namespace NetSql.Entities
         private void SetDeleteSql()
         {
             Delete = $"DELETE FROM {_descriptor.TableName} ";
-            DeleteSingle = $"DELETE FROM {_descriptor.TableName} WHERE {_sqlAdapter.AppendParameterWithValue("Id")};";
+            DeleteSingle = $"DELETE FROM {_descriptor.TableName} WHERE {_sqlAdapter.AppendQuote(_descriptor.PrimaryKey.Name)}={_sqlAdapter.AppendParameter(_descriptor.PrimaryKey.PropertyInfo.Name)};";
         }
 
         /// <summary>
@@ -119,17 +118,18 @@ namespace NetSql.Entities
 
             if (_descriptor.PrimaryKeyType != PrimaryKeyType.NoPrimaryKey)
             {
-                var properties = _descriptor.Properties.Where(m => m != _descriptor.PrimaryKey);
+                var columns = _descriptor.Columns.Where(m => !m.IsPrimaryKey);
 
-                foreach (var p in properties)
+                foreach (var col in columns)
                 {
-                    _sqlAdapter.AppendParameterWithValue(sb, p.Name);
+                    sb.AppendFormat("{0}={1}", _sqlAdapter.AppendQuote(col.Name),
+                        _sqlAdapter.AppendParameter(col.PropertyInfo.Name));
                     sb.Append(",");
                 }
 
                 sb.Remove(sb.Length - 1, 1);
 
-                sb.AppendFormat(" WHERE {0};", _sqlAdapter.AppendParameterWithValue("Id"));
+                sb.AppendFormat(" WHERE {0}={1};", _sqlAdapter.AppendQuote(_descriptor.PrimaryKey.Name), _sqlAdapter.AppendParameter(_descriptor.PrimaryKey.PropertyInfo.Name));
 
                 UpdateSingle = sb.ToString();
             }
@@ -148,8 +148,7 @@ namespace NetSql.Entities
 
             if (_descriptor.PrimaryKeyType != PrimaryKeyType.NoPrimaryKey)
             {
-                sb.Append(" WHERE ");
-                _sqlAdapter.AppendParameterWithValue(sb, "Id");
+                sb.AppendFormat(" WHERE {0}={1};", _sqlAdapter.AppendQuote(_descriptor.PrimaryKey.Name), _sqlAdapter.AppendParameter(_descriptor.PrimaryKey.PropertyInfo.Name));
                 Get = sb.ToString();
             }
         }
