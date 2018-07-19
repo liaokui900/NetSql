@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using NetSql.Internal;
+using NetSql.Pagination;
 using NetSql.Test.Common.Model;
 using Xunit;
 
@@ -30,11 +31,12 @@ namespace NetSql.MySql.Test
             Assert.True(article.Id > 0);
         }
 
-        [Fact]
-        public void BatchAddTest()
+        [Theory]
+        [InlineData(10000)]
+        public void BatchAddTest(int count = 1000)
         {
             var list = new List<Article>();
-            for (var i = 0; i < 10; i++)
+            for (var i = 0; i < count; i++)
             {
                 list.Add(new Article
                 {
@@ -47,26 +49,6 @@ namespace NetSql.MySql.Test
                     CreatedTime = DateTime.Now
                 });
             }
-
-            //预热
-            var b1 = _dbContext.Articles.BatchAddtAsync(list).Result;
-
-            list.Clear();
-
-            for (var i = 0; i < 10000; i++)
-            {
-                list.Add(new Article
-                {
-                    Title1 = "test" + i,
-                    Category = i % 3 == 1 ? Category.Blog : Category.Movie,
-                    Summary = "这是一篇测试文章",
-                    Body = "这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章",
-                    ReadCount = 10,
-                    IsDeleted = i % 2 == 0,
-                    CreatedTime = DateTime.Now
-                });
-            }
-
 
             var sw = new Stopwatch();
             sw.Start();
@@ -138,12 +120,9 @@ namespace NetSql.MySql.Test
         [Fact]
         public void UpdateTest()
         {
-            var entity = new Article
-            {
-                Id = 1,
-                Title1 = "更新测试",
-                IsDeleted = false
-            };
+            var entity = _dbContext.Articles.GetAsync(10).Result;
+            entity.Title1 = "更新测试";
+            entity.IsDeleted = true;
 
             var b = _dbContext.Articles.UpdateAsync(entity).Result;
 
@@ -209,6 +188,45 @@ namespace NetSql.MySql.Test
             var entity = _dbContext.Articles.GetAsync(2).Result;
 
             Assert.NotNull(entity);
+        }
+
+        [Fact]
+        public void GetByExpressionTest()
+        {
+            BatchAddTest(100);
+
+            var sort = new Sort<Article>(Enums.SortType.Desc).OrderBy(m => m.Id).OrderBy(m => m.Title1);
+            var entity = _dbContext.Articles.GetAsync(m => m.Id > 10, sort).Result;
+
+            Assert.NotNull(entity);
+        }
+
+        [Fact]
+        public void QueryTest()
+        {
+            BatchAddTest(100);
+
+            var sort = new Sort<Article>(Enums.SortType.Desc).OrderBy(m => m.Id);
+            var paging = new Paging();
+            var list = _dbContext.Articles.Query(m => m.Id > 10, paging, sort).Result;
+
+            Assert.NotNull(list);
+
+        }
+
+        [Fact]
+        public void QueryWithSelectTest()
+        {
+            BatchAddTest(100);
+
+            var sort = new Sort<Article>(Enums.SortType.Desc).OrderBy(m => m.Id);
+            var paging = new Paging();
+            paging.Size = 20;
+            paging.Index = 2;
+            var list = _dbContext.Articles.Query(m => m.Id > 10, m => new { m.Id }, paging, sort).Result;
+
+            Assert.NotNull(list);
+
         }
     }
 }

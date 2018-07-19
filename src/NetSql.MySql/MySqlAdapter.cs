@@ -23,11 +23,17 @@ namespace NetSql.MySql
         /// </summary>
         public override string IdentitySql => "SELECT LAST_INSERT_ID() ID;";
 
-        public override string GeneratePagingSql(string tableName, string queryWhere, Paging paging)
+        public override string GeneratePagingSql(string tableName, string queryWhere, Paging paging, ISort sort = null, string columns = null)
         {
-            var sb = new StringBuilder($"SELECT SQL_CALC_FOUND_ROWS * FROM {tableName}");
+            if (string.IsNullOrWhiteSpace(columns))
+                columns = "*";
+
+            var sb = new StringBuilder($"SELECT SQL_CALC_FOUND_ROWS {columns} FROM {tableName}");
             AppendQueryWhere(sb, queryWhere);
-            AppendOrderBy(sb, paging);
+            if (sort != null)
+            {
+                sb.Append(sort.Builder());
+            }
             sb.AppendFormat(" LIMIT {0},{1};SELECT CAST(FOUND_ROWS() as SIGNED) AS TotalCount;", paging.Skip, paging.Size);
             return sb.ToString();
         }

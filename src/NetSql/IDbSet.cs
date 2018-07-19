@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using NetSql.Entities;
 using NetSql.Pagination;
 
 namespace NetSql
 {
-    public interface IDbSet<TEntity> where TEntity : new()
+    public interface IDbSet<TEntity> where TEntity : Entity, new()
     {
         /// <summary>
         /// 新增
@@ -84,6 +85,36 @@ namespace NetSql
         /// <returns></returns>
         Task<TEntity> GetAsync(dynamic id, IDbTransaction transaction = null);
 
-        Task<IEnumerable<TEntity>> Find(Expression<Func<TEntity, bool>> whereExp, Paging paging, IDbTransaction transaction = null);
+        /// <summary>
+        /// 根据Lambda表达式查询单挑数据
+        /// <para>Note：有多条时返回第一条</para>
+        /// </summary>
+        /// <param name="where"></param>
+        /// <param name="sort">排序</param>
+        /// <param name="transaction">事务</param>
+        /// <returns></returns>
+        Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> where, ISort sort = null, IDbTransaction transaction = null);
+
+        /// <summary>
+        /// 查询列表
+        /// </summary>
+        /// <param name="whereExp">查询条件</param>
+        /// <param name="paging">分页</param>
+        /// <param name="sort">排序</param>
+        /// <param name="transaction">事务</param>
+        /// <returns></returns>
+        Task<IEnumerable<TEntity>> Query(Expression<Func<TEntity, bool>> whereExp, Paging paging, ISort sort = null, IDbTransaction transaction = null);
+
+        /// <summary>
+        /// 查询列表，返回指定列
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="whereExp"></param>
+        /// <param name="selectExp"></param>
+        /// <param name="paging"></param>
+        /// <param name="sort"></param>
+        /// <param name="transaction"></param>
+        /// <returns></returns>
+        Task<IEnumerable<TEntity>> Query<TResult>(Expression<Func<TEntity, bool>> whereExp, Expression<Func<TEntity, TResult>> selectExp, Paging paging, ISort sort = null, IDbTransaction transaction = null);
     }
 }

@@ -145,6 +145,25 @@ var b = _dbContext.Articles.UpdateAsync(m => m.Id > 10, n => new Article
 ``` C#
 var entity = _dbContext.Articles.GetAsync(2).Result;
 ```
+### 13、根据Lambda表达式查询单条记录，有多条时返回第一条
+``` C#
+var sort = new Sort<Article>(Enums.SortType.Desc).OrderBy(m => m.Id).OrderBy(m => m.Title1);
+var entity = _dbContext.Articles.GetAsync(m => m.Id > 10, sort).Result;
+```
+### 14、根据Lambda表达式分页查询列表
+``` C#
+var sort = new Sort<Article>(Enums.SortType.Desc).OrderBy(m => m.Id);
+var paging = new Paging();
+var list = _dbContext.Articles.Query(m => m.Id > 10, paging, sort).Result;
+```
+### 15、根据Lambda表达式分页查询列表，返回指定列数据
+``` C#
+var sort = new Sort<Article>(Enums.SortType.Desc).OrderBy(m => m.Id);
+var paging = new Paging();
+paging.Size = 20;
+paging.Index = 2;
+var list = _dbContext.Articles.Query(m => m.Id > 10, m => new { m.Id }, paging, sort).Result;
+```
 # 其他用法
 ## 1、指定表名称
 使用``` TableAttribute ``` 特性可以为实体指定表名称
@@ -172,5 +191,3 @@ public class Article : EntityBase
      public string Title { get; set; }
 }
 ```
-# 未完成
-分页查询

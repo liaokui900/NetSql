@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using NetSql.Enums;
+﻿using System.Collections.Generic;
 
 namespace NetSql.Pagination
 {
@@ -26,7 +24,6 @@ namespace NetSql.Pagination
         {
             _index = index;
             _size = size;
-            OrderBy = new List<string>();
         }
 
         private int _index;
@@ -60,16 +57,6 @@ namespace NetSql.Pagination
         /// 跳过数量
         /// </summary>
         public int Skip => (Index - 1) * Size;
-
-        /// <summary>
-        /// 排序字段
-        /// </summary>
-        public IList<string> OrderBy { get; }
-
-        /// <summary>
-        /// 排序规则
-        /// </summary>
-        public SortType Sort { get; set; } = SortType.Asc;
 
         /// <summary>
         /// 总数量

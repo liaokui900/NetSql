@@ -111,27 +111,14 @@ namespace NetSql.SqlAdapter
         }
 
         /// <summary>
-        /// 附加排序字段
-        /// </summary>
-        /// <param name="sb"></param>
-        /// <param name="paging"></param>
-        public void AppendOrderBy(StringBuilder sb, Paging paging)
-        {
-            if (!paging.OrderBy.Any())
-            {
-                paging.OrderBy.Add("ID");//如果不包含排序字段，则添加ID为排序字段
-            }
-
-            sb.AppendFormat(" ORDER BY {0} {1}", string.Join(",", paging.OrderBy), paging.Sort.ToString());
-        }
-
-        /// <summary>
         /// 生成分页语句
         /// </summary>
         /// <param name="tableName">表名</param>
         /// <param name="queryWhere">查询条件</param>
         /// <param name="paging">分页类</param>
+        /// <param name="sort">排序</param>
+        /// <param name="columns">返回指定列</param>
         /// <returns></returns>
-        public abstract string GeneratePagingSql(string tableName, string queryWhere, Paging paging);
+        public abstract string GeneratePagingSql(string tableName, string queryWhere, Paging paging, ISort sort = null, string columns = null);
     }
 }

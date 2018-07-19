@@ -26,12 +26,19 @@ namespace NetSql.SqlAdapter
         /// <param name="tableName">表名</param>
         /// <param name="queryWhere">查询条件</param>
         /// <param name="paging">分页类</param>
+        /// <param name="sort">排序</param>
         /// <returns></returns>
-        public override string GeneratePagingSql(string tableName, string queryWhere, Paging paging)
+        public override string GeneratePagingSql(string tableName, string queryWhere, Paging paging, ISort sort = null, string columns = null)
         {
-            var sql = new StringBuilder($"SELECT * FROM {tableName}");
+            if (string.IsNullOrWhiteSpace(columns))
+                columns = "*";
+
+            var sql = new StringBuilder($"SELECT {columns} FROM {tableName}");
             AppendQueryWhere(sql, queryWhere);
-            AppendOrderBy(sql, paging);
+            if (sort != null)
+            {
+                sql.Append(sort.Builder());
+            }
             sql.AppendFormat(" OFFSET {0} ROW FETCH NEXT {1} ROWS ONLY;", paging.Skip, paging.Size);
 
             //查询总数量语句

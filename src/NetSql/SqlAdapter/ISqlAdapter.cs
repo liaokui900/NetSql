@@ -94,20 +94,15 @@ namespace NetSql.SqlAdapter
         void AppendQueryWhere(StringBuilder sb, string queryWhere);
 
         /// <summary>
-        /// 附加排序字段
-        /// </summary>
-        /// <param name="sb"></param>
-        /// <param name="paging"></param>
-        void AppendOrderBy(StringBuilder sb, Paging paging);
-
-        /// <summary>
         /// 生成分页语句
         /// </summary>
         /// <param name="tableName">表名</param>
         /// <param name="queryWhere">查询条件</param>
         /// <param name="paging">分页类</param>
+        /// <param name="sort">排序</param>
+        /// <param name="columns">查询指定列</param>
         /// <returns></returns>
-        string GeneratePagingSql(string tableName, string queryWhere, Paging paging);
+        string GeneratePagingSql(string tableName, string queryWhere, Paging paging, ISort sort = null, string columns = null);
 
         #endregion
 

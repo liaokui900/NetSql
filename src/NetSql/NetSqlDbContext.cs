@@ -2,6 +2,7 @@
 using System.Data;
 using System.Linq;
 using System.Reflection;
+using NetSql.Entities;
 using NetSql.Internal;
 
 namespace NetSql

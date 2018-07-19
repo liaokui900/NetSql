@@ -38,7 +38,7 @@ namespace NetSql
         {
             _sqlAdapter = sqlAdapter;
             _context = context;
-            _descriptor = new EntityDescriptor<TEntity>();
+            _descriptor = EntityCollection.TryGet<TEntity>();
             _sqlStatement = new EntitySqlStatement(_descriptor, sqlAdapter);
             _expressionContext = new ExpressionContext(sqlAdapter, _descriptor);
         }
@@ -175,13 +175,17 @@ namespace NetSql
             Check.NotNull(whereExp, nameof(whereExp));
             Check.NotNull(updateEntity, nameof(updateEntity));
 
-            var sql = new StringBuilder(_sqlStatement.Update);
+            var updateSql = _expressionContext.ToSql(updateEntity);
+            if (string.IsNullOrWhiteSpace(updateSql))
+                throw new Exception("生成sql异常");
 
-            sql.Append(_expressionContext.ToSql(updateEntity));
+            var whereSql = _expressionContext.ToSql(whereExp);
+            if (string.IsNullOrWhiteSpace(whereSql))
+                throw new Exception("生成sql异常");
 
-            _sqlAdapter.AppendQueryWhere(sql, _expressionContext.ToSql(whereExp));
+            var sql = $"{_sqlStatement.Update} {updateSql} WHERE {whereSql}";
 
-            return GetCon(transaction).ExecuteAsync(sql.ToString(), transaction: transaction);
+            return GetCon(transaction).ExecuteAsync(sql, transaction: transaction);
         }
 
         public Task<bool> BatchUpdateAsync(IList<TEntity> entityList, IDbTransaction transaction = null)
@@ -235,9 +239,60 @@ namespace NetSql
             return GetCon(transaction).QuerySingleOrDefaultAsync<TEntity>(_sqlStatement.Get, dynParms, transaction);
         }
 
-        public Task<IEnumerable<TEntity>> Find(Expression<Func<TEntity, bool>> whereExp, Paging paging, IDbTransaction transaction = null)
+        public Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> whereExp, ISort sort = null, IDbTransaction transaction = null)
         {
-            throw new NotImplementedException();
+            Check.NotNull(whereExp, nameof(whereExp));
+
+            var whereSql = _expressionContext.ToSql(whereExp);
+            if (string.IsNullOrWhiteSpace(whereSql))
+                throw new Exception("生成sql异常");
+
+            var sql = $"{_sqlStatement.Query} WHERE {whereSql}";
+            if (sort != null)
+            {
+                sql += sort.Builder();
+            }
+
+            return GetCon(transaction).QueryFirstOrDefaultAsync<TEntity>(sql, transaction: transaction);
+        }
+
+        public async Task<IEnumerable<TEntity>> Query(Expression<Func<TEntity, bool>> whereExp, Paging paging, ISort sort = null, IDbTransaction transaction = null)
+        {
+            Check.NotNull(whereExp, nameof(whereExp));
+
+            var whereSql = _expressionContext.ToSql(whereExp);
+            if (string.IsNullOrWhiteSpace(whereSql))
+                throw new Exception("生成sql异常");
+
+            var sql = _sqlAdapter.GeneratePagingSql(_descriptor.TableName, whereSql, paging, sort);
+            using (var reader = await GetCon(transaction).QueryMultipleAsync(sql, null, transaction))
+            {
+                var list = await reader.ReadAsync<TEntity>();
+                paging.TotalCount = await reader.ReadSingleAsync<long>();
+
+                return list;
+            }
+        }
+
+        public async Task<IEnumerable<TEntity>> Query<TResult>(Expression<Func<TEntity, bool>> whereExp, Expression<Func<TEntity, TResult>> selectExp, Paging paging, ISort sort = null, IDbTransaction transaction = null)
+        {
+            Check.NotNull(whereExp, nameof(whereExp));
+            Check.NotNull(selectExp, nameof(selectExp));
+
+            var whereSql = _expressionContext.ToSql(whereExp);
+            if (string.IsNullOrWhiteSpace(whereSql))
+                throw new Exception("生成sql异常");
+
+            var selectSql = _expressionContext.ToSelectSql(selectExp);
+
+            var sql = _sqlAdapter.GeneratePagingSql(_descriptor.TableName, whereSql, paging, sort, selectSql);
+            using (var reader = await GetCon(transaction).QueryMultipleAsync(sql, null, transaction))
+            {
+                var list = await reader.ReadAsync<TEntity>();
+                paging.TotalCount = await reader.ReadSingleAsync<long>();
+
+                return list;
+            }
         }
 
         #endregion

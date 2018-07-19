@@ -42,6 +42,26 @@ namespace NetSql.Expressions
             return sqlBuilder.ToString();
         }
 
+        public string ToSelectSql(Expression exp)
+        {
+            if (exp == null)
+                return string.Empty;
+
+            var sqlBuilder = new StringBuilder();
+
+            if (exp is LambdaExpression lambdaExpression && lambdaExpression.Body is NewExpression newExpression && newExpression.Members.Any())
+            {
+                foreach (var member in newExpression.Members)
+                {
+                    sqlBuilder.AppendFormat("{0},", member.Name);
+                }
+
+                sqlBuilder.Remove(sqlBuilder.Length - 1, 1);
+            }
+
+            return sqlBuilder.ToString();
+        }
+
         #region ==表达式解析==
 
         private void Resolve(Expression exp, StringBuilder sqlBuilder)
