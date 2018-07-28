@@ -2,6 +2,15 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>Oldli</Authors>
+    <Description>基于Dapper的轻量级ORM框架</Description>
+    <PackageProjectUrl>https://github.com/iamoldli/NetSql</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/iamoldli/NetSql</RepositoryUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>bin\Release\netstandard2.0\NetSql.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

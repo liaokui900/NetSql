@@ -10,7 +10,7 @@ namespace NetSql
     /// <summary>
     /// 数据库上下文
     /// </summary>
-    public abstract class NetSqlDbContext
+    public abstract class NetSqlDbContext : IDbContext
     {
         #region ==属性==
 
@@ -23,6 +23,10 @@ namespace NetSql
 
         #region ==公共方法==
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         public IDbConnection OpenConnection()
         {
             //使用反射创建
@@ -31,9 +35,38 @@ namespace NetSql
             return con;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         public IDbTransaction BeginTransaction()
         {
             return OpenConnection().BeginTransaction();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <returns></returns>
+        public IDbSet<TEntity> DbSet<TEntity>() where TEntity : Entity, new()
+        {
+            var properties = GetType().GetRuntimeProperties()
+                .Where(p => !p.IsStatic()
+                            && !p.GetIndexParameters().Any()
+                            && p.PropertyType.GetTypeInfo().IsGenericType
+                            && (p.PropertyType.GetGenericTypeDefinition() == typeof(IDbSet<>) || p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>)));
+
+            var entityType = typeof(TEntity);
+            foreach (var propertyInfo in properties)
+            {
+                if (entityType == propertyInfo.PropertyType.GenericTypeArguments.Single())
+                {
+                    return (IDbSet<TEntity>)propertyInfo.GetValue(this);
+                }
+            }
+
+            throw new NullReferenceException("未找到指定的实体数据集");
         }
 
         #endregion
@@ -50,6 +83,9 @@ namespace NetSql
 
         #region ==构造函数==
 
+        /// <summary>
+        /// 
+        /// </summary>
         protected NetSqlDbContext()
         {
             Config();

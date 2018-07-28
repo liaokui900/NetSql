@@ -1,18 +1,15 @@
-﻿using NetSql.Entities;
-using NetSql.Pagination;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq.Expressions;
+using System.Text;
 using System.Threading.Tasks;
+using NetSql.Entities;
+using NetSql.Pagination;
 
-namespace NetSql
+namespace NetSql.DDDLite
 {
-    /// <summary>
-    /// 实体数据集
-    /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
-    public interface IDbSet<TEntity> where TEntity : Entity, new()
+    public interface IRepository<TEntity> where TEntity : Entity, new()
     {
         /// <summary>
         /// 新增

@@ -2,6 +2,15 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Description>基于Dapper的轻量级ORM框架，MySql实现</Description>
+    <Authors>Oldli</Authors>
+    <PackageProjectUrl>https://github.com/iamoldli/NetSql</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/iamoldli/NetSql</RepositoryUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>bin\Release\netstandard2.0\NetSql.MySql.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

@@ -220,9 +220,11 @@ namespace NetSql.MySql.Test
             BatchAddTest(100);
 
             var sort = new Sort<Article>(Enums.SortType.Desc).OrderBy(m => m.Id);
-            var paging = new Paging();
-            paging.Size = 20;
-            paging.Index = 2;
+            var paging = new Paging
+            {
+                Size = 20,
+                Index = 2
+            };
             var list = _dbContext.Articles.Query(m => m.Id > 10, m => new { m.Id }, paging, sort).Result;
 
             Assert.NotNull(list);

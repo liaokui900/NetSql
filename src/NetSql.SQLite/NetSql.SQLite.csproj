@@ -2,6 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Description>基于Dapper的轻量级ORM框架，SQLite实现</Description>
+    <Authors>Oldli</Authors>
+    <PackageProjectUrl>https://github.com/iamoldli/NetSql</PackageProjectUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>bin\Release\netstandard2.0\NetSql.SQLite.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
