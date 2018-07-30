@@ -45,7 +45,7 @@ namespace NetSql
 
         #endregion
 
-        #region ==操作方法==
+        #region ==CRUD操作方法==
 
         public async Task<bool> AddAsync(TEntity entity, IDbTransaction transaction = null)
         {
@@ -293,6 +293,34 @@ namespace NetSql
 
                 return list;
             }
+        }
+
+        #endregion
+
+        #region ==数据库方法==
+
+        public Task<int> ExecuteAsync(string sql, object param = null, IDbTransaction transaction = null, CommandType? commandType = null)
+        {
+            return GetCon(transaction).ExecuteAsync(sql, param, transaction, commandType: commandType);
+        }
+
+        public Task<T> ExecuteScalarAsync<T>(string sql, object param = null, IDbTransaction transaction = null, CommandType? commandType = null)
+        {
+            return GetCon(transaction).ExecuteScalarAsync<T>(sql, param, transaction, commandType: commandType);
+        }
+
+        public Task<T> QueryFirstOrDefaultAsync<T>(string sql, object param = null, IDbTransaction transaction = null, CommandType? commandType = null)
+        {
+            return GetCon(transaction).QueryFirstOrDefaultAsync<T>(sql, param, transaction, commandType: commandType);
+        }
+        public Task<T> QuerySingleOrDefaultAsync<T>(string sql, object param = null, IDbTransaction transaction = null, CommandType? commandType = null)
+        {
+            return GetCon(transaction).QuerySingleOrDefaultAsync<T>(sql, param, transaction, commandType: commandType);
+        }
+
+        public Task<IEnumerable<T>> QueryAsync<T>(string sql, object param = null, IDbTransaction transaction = null, CommandType? commandType = null)
+        {
+            return GetCon(transaction).QueryAsync<T>(sql, param, transaction, commandType: commandType);
         }
 
         #endregion

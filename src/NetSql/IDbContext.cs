@@ -28,11 +28,5 @@ namespace NetSql
         /// <typeparam name="TEntity"></typeparam>
         /// <returns></returns>
         IDbSet<TEntity> DbSet<TEntity>() where TEntity : Entity, new();
-
-        /// <summary>
-        /// 配置
-        /// </summary>
-        /// <param name="builder"></param>
-        void OnConfiguring(DbContextOptionsBuilder builder);
     }
 }

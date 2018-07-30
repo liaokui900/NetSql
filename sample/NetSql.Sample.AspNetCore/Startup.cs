@@ -34,7 +34,6 @@ namespace NetSql.Sample.AspNetCore
             {
                 app.UseDeveloperExceptionPage();
             }
-
             app.UseMvc();
         }
     }
