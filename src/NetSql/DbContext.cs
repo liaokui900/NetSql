@@ -10,14 +10,31 @@ namespace NetSql
     /// <summary>
     /// 数据库上下文
     /// </summary>
-    public abstract class NetSqlDbContext : IDbContext
+    public abstract class DbContext : IDbContext
     {
         #region ==属性==
 
         /// <summary>
         /// 上下文配置项
         /// </summary>
-        public DbContextOptionsAbstract Options { get; private set; }
+        public IDbContextOptions Options { get; }
+
+        #endregion
+
+        #region ==构造函数==
+
+        /// <summary>
+        /// 
+        /// </summary>
+        protected DbContext(IDbContextOptions options)
+        {
+            Check.NotNull(options, nameof(options), "数据库配置项为空");
+            Check.NotNull(options.ConnectionString, nameof(options.ConnectionString), "数据库连接字符串为空");
+
+            Options = options;
+
+            InitializeSets();
+        }
 
         #endregion
 
@@ -71,30 +88,6 @@ namespace NetSql
 
         #endregion
 
-        #region ==抽象方法==
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="builder"></param>
-        protected abstract void OnConfiguring(DbContextOptionsBuilder builder);
-
-        #endregion
-
-        #region ==构造函数==
-
-        /// <summary>
-        /// 
-        /// </summary>
-        protected NetSqlDbContext()
-        {
-            Config();
-
-            InitializeSets();
-        }
-
-        #endregion
-
         #region ==私有方法==
 
         /// <summary>
@@ -115,18 +108,6 @@ namespace NetSql
                 var dbSet = Activator.CreateInstance(dbSetType, Options.SqlAdapter, this);
                 propertyInfo.SetValue(this, dbSet);
             }
-        }
-
-        /// <summary>
-        /// 加载配置
-        /// </summary>
-        private void Config()
-        {
-            var optionsBuilder = new DbContextOptionsBuilder();
-
-            OnConfiguring(optionsBuilder);
-
-            Options = optionsBuilder.Builder();
         }
 
         #endregion

@@ -1,18 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
+﻿using System.Data;
 using System.Data.SqlClient;
-using System.Text;
+using NetSql.Internal;
 using NetSql.SqlAdapter;
+using DbType = NetSql.Enums.DbType;
 
 namespace NetSql
 {
-    internal class DbContextOptions : DbContextOptionsAbstract
+    public class DbContextOptions : IDbContextOptions
     {
-        public DbContextOptions(string connectionString) : base(connectionString, new SqlServerAdapter(), Enums.DbType.SqlServer)
-        {
-        }
 
-        public override IDbConnection DbConnection => new SqlConnection(ConnectionString);
+        public string ConnectionString { get; }
+
+        public ISqlAdapter SqlAdapter { get; }
+
+        public IDbConnection DbConnection => new SqlConnection(ConnectionString);
+
+        public DbType DbType { get; }
+
+        public DbContextOptions(string connectionString)
+        {
+            Check.NotNull(connectionString, nameof(connectionString), "数据库连接字符串为空");
+
+            ConnectionString = connectionString;
+            DbType = DbType.SqlServer;
+            SqlAdapter = new SqlServerAdapter();
+        }
     }
 }

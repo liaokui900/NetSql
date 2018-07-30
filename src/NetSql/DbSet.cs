@@ -20,7 +20,7 @@ namespace NetSql
     {
         #region ==属性==
 
-        private readonly NetSqlDbContext _context;
+        private readonly DbContext _context;
 
         private readonly IEntityDescriptor _descriptor;
 
@@ -34,7 +34,7 @@ namespace NetSql
 
         #region ==构造函数==
 
-        public DbSet(ISqlAdapter sqlAdapter, NetSqlDbContext context)
+        public DbSet(ISqlAdapter sqlAdapter, DbContext context)
         {
             _sqlAdapter = sqlAdapter;
             _context = context;

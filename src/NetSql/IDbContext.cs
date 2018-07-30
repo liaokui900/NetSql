@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Text;
+﻿using System.Data;
 using NetSql.Entities;
 
 namespace NetSql
@@ -12,10 +9,16 @@ namespace NetSql
     public interface IDbContext
     {
         /// <summary>
+        /// 
+        /// </summary>
+        IDbContextOptions Options { get; }
+
+        /// <summary>
         /// 打开一个数据库连接
         /// </summary>
         /// <returns></returns>
         IDbConnection OpenConnection();
+
         /// <summary>
         /// 打开一个事务
         /// </summary>
