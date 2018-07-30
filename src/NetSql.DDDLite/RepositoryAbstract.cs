@@ -47,14 +47,26 @@ namespace NetSql.DDDLite
             return Db.GetAsync(where, sort, transaction);
         }
 
-        public virtual Task<IEnumerable<TEntity>> Query(Expression<Func<TEntity, bool>> whereExp, Paging paging, ISort sort = null, IDbTransaction transaction = null)
+        public Task<IEnumerable<TEntity>> QueryAsync(Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null, IDbTransaction transaction = null)
         {
-            return Db.Query(whereExp, paging, sort, transaction);
+            return Db.QueryAsync(whereExp, sort, transaction);
         }
 
-        public virtual Task<IEnumerable<TEntity>> Query<TResult>(Expression<Func<TEntity, bool>> whereExp, Expression<Func<TEntity, TResult>> selectExp, Paging paging, ISort sort = null, IDbTransaction transaction = null)
+        public Task<IEnumerable<TEntity>> QueryPartialFieldAsync<TResult>(Expression<Func<TEntity, TResult>> selectExp, Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null,
+            IDbTransaction transaction = null)
         {
-            return Db.Query(whereExp, selectExp, paging, sort, transaction);
+            return Db.QueryPartialFieldAsync(selectExp, whereExp, sort, transaction);
+        }
+
+        public Task<IEnumerable<TEntity>> PaginationAsync(Paging paging, Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null, IDbTransaction transaction = null)
+        {
+            return Db.PaginationAsync(paging, whereExp, sort, transaction);
+        }
+
+        public Task<IEnumerable<TEntity>> PaginationAsync<TResult>(Expression<Func<TEntity, TResult>> selectExp, Paging paging, Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null,
+            IDbTransaction transaction = null)
+        {
+            return Db.PaginationAsync(selectExp, paging, whereExp, sort, transaction);
         }
 
         public virtual Task<int> RemoveAsync(dynamic id, IDbTransaction transaction = null)

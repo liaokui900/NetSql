@@ -244,8 +244,7 @@ namespace NetSql
             Check.NotNull(whereExp, nameof(whereExp));
 
             var whereSql = _expressionContext.ToSql(whereExp);
-            if (string.IsNullOrWhiteSpace(whereSql))
-                throw new Exception("生成sql异常");
+            Check.NotNull(whereSql, nameof(whereExp), "生成查询条件sql异常");
 
             var sql = $"{_sqlStatement.Query} WHERE {whereSql}";
             if (sort != null)
@@ -256,13 +255,61 @@ namespace NetSql
             return GetCon(transaction).QueryFirstOrDefaultAsync<TEntity>(sql, transaction: transaction);
         }
 
-        public async Task<IEnumerable<TEntity>> Query(Expression<Func<TEntity, bool>> whereExp, Paging paging, ISort sort = null, IDbTransaction transaction = null)
+        public Task<IEnumerable<TEntity>> QueryAsync(Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null, IDbTransaction transaction = null)
         {
-            Check.NotNull(whereExp, nameof(whereExp));
+            var sql = new StringBuilder(_sqlStatement.Query);
+            if (whereExp != null)
+            {
+                var whereSql = _expressionContext.ToSql(whereExp);
+                Check.NotNull(whereSql, nameof(whereExp), "生成查询条件sql异常");
 
-            var whereSql = _expressionContext.ToSql(whereExp);
-            if (string.IsNullOrWhiteSpace(whereSql))
-                throw new Exception("生成sql异常");
+                sql.Append(" WHERE ");
+                sql.Append(whereSql);
+            }
+
+            if (sort != null)
+            {
+                sql.AppendFormat(" {0};", sort.Builder());
+            }
+
+            return QueryAsync<TEntity>(sql.ToString(), null, transaction);
+        }
+
+        public Task<IEnumerable<TEntity>> QueryPartialFieldAsync<TResult>(Expression<Func<TEntity, TResult>> selectExp, Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null, IDbTransaction transaction = null)
+        {
+            Check.NotNull(selectExp, nameof(selectExp));
+
+            var selectSql = _expressionContext.ToSelectSql(selectExp);
+            Check.NotNull(selectSql, nameof(selectExp), "生成返回列sql异常");
+
+            var sql = new StringBuilder("SELECT ");
+            sql.AppendFormat("{0} FROM {1} ", selectSql, _descriptor.TableName);
+
+            if (whereExp != null)
+            {
+                var whereSql = _expressionContext.ToSql(whereExp);
+                Check.NotNull(whereSql, nameof(whereExp), "生成查询条件sql异常");
+
+                sql.Append("WHERE ");
+                sql.Append(whereSql);
+            }
+
+            if (sort != null)
+            {
+                sql.Append(sort.Builder());
+            }
+
+            return QueryAsync<TEntity>(sql.ToString(), null, transaction);
+        }
+
+        public async Task<IEnumerable<TEntity>> PaginationAsync(Paging paging, Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null, IDbTransaction transaction = null)
+        {
+            string whereSql = string.Empty;
+            if (whereExp != null)
+            {
+                whereSql = _expressionContext.ToSql(whereExp);
+                Check.NotNull(whereSql, nameof(whereExp), "生成查询条件sql异常");
+            }
 
             var sql = _sqlAdapter.GeneratePagingSql(_descriptor.TableName, whereSql, paging, sort);
             using (var reader = await GetCon(transaction).QueryMultipleAsync(sql, null, transaction))
@@ -274,16 +321,19 @@ namespace NetSql
             }
         }
 
-        public async Task<IEnumerable<TEntity>> Query<TResult>(Expression<Func<TEntity, bool>> whereExp, Expression<Func<TEntity, TResult>> selectExp, Paging paging, ISort sort = null, IDbTransaction transaction = null)
+        public async Task<IEnumerable<TEntity>> PaginationAsync<TResult>(Expression<Func<TEntity, TResult>> selectExp, Paging paging, Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null, IDbTransaction transaction = null)
         {
-            Check.NotNull(whereExp, nameof(whereExp));
             Check.NotNull(selectExp, nameof(selectExp));
 
-            var whereSql = _expressionContext.ToSql(whereExp);
-            if (string.IsNullOrWhiteSpace(whereSql))
-                throw new Exception("生成sql异常");
+            string whereSql = string.Empty;
+            if (whereExp != null)
+            {
+                whereSql = _expressionContext.ToSql(whereExp);
+                Check.NotNull(whereSql, nameof(whereExp), "生成查询条件sql异常");
+            }
 
             var selectSql = _expressionContext.ToSelectSql(selectExp);
+            Check.NotNull(selectSql, nameof(selectExp), "生成返回列sql异常");
 
             var sql = _sqlAdapter.GeneratePagingSql(_descriptor.TableName, whereSql, paging, sort, selectSql);
             using (var reader = await GetCon(transaction).QueryMultipleAsync(sql, null, transaction))

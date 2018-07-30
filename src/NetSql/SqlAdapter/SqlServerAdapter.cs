@@ -27,6 +27,7 @@ namespace NetSql.SqlAdapter
         /// <param name="queryWhere">查询条件</param>
         /// <param name="paging">分页类</param>
         /// <param name="sort">排序</param>
+        /// <param name="columns"></param>
         /// <returns></returns>
         public override string GeneratePagingSql(string tableName, string queryWhere, Paging paging, ISort sort = null, string columns = null)
         {

@@ -9,6 +9,10 @@ using NetSql.Pagination;
 
 namespace NetSql.DDDLite
 {
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="TEntity"></typeparam>
     public interface IRepository<TEntity> where TEntity : Entity, new()
     {
         /// <summary>
@@ -96,25 +100,45 @@ namespace NetSql.DDDLite
         Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> where, ISort sort = null, IDbTransaction transaction = null);
 
         /// <summary>
+        /// 查询实体列表
+        /// </summary>
+        /// <param name="whereExp"></param>
+        /// <param name="sort"></param>
+        /// <param name="transaction"></param>
+        /// <returns></returns>
+        Task<IEnumerable<TEntity>> QueryAsync(Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null, IDbTransaction transaction = null);
+
+        /// <summary>
+        /// 查询实体列表，返回部分字段
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="selectExp"></param>
+        /// <param name="whereExp"></param>
+        /// <param name="sort"></param>
+        /// <param name="transaction"></param>
+        /// <returns></returns>
+        Task<IEnumerable<TEntity>> QueryPartialFieldAsync<TResult>(Expression<Func<TEntity, TResult>> selectExp, Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null, IDbTransaction transaction = null);
+
+        /// <summary>
         /// 查询列表
         /// </summary>
-        /// <param name="whereExp">查询条件</param>
-        /// <param name="paging">分页</param>
-        /// <param name="sort">排序</param>
-        /// <param name="transaction">事务</param>
+        /// <param name="paging"></param>
+        /// <param name="whereExp"></param>
+        /// <param name="sort"></param>
+        /// <param name="transaction"></param>
         /// <returns></returns>
-        Task<IEnumerable<TEntity>> Query(Expression<Func<TEntity, bool>> whereExp, Paging paging, ISort sort = null, IDbTransaction transaction = null);
+        Task<IEnumerable<TEntity>> PaginationAsync(Paging paging, Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null, IDbTransaction transaction = null);
 
         /// <summary>
         /// 查询列表，返回指定列
         /// </summary>
         /// <typeparam name="TResult"></typeparam>
-        /// <param name="whereExp"></param>
         /// <param name="selectExp"></param>
         /// <param name="paging"></param>
+        /// <param name="whereExp"></param>
         /// <param name="sort"></param>
         /// <param name="transaction"></param>
         /// <returns></returns>
-        Task<IEnumerable<TEntity>> Query<TResult>(Expression<Func<TEntity, bool>> whereExp, Expression<Func<TEntity, TResult>> selectExp, Paging paging, ISort sort = null, IDbTransaction transaction = null);
+        Task<IEnumerable<TEntity>> PaginationAsync<TResult>(Expression<Func<TEntity, TResult>> selectExp, Paging paging, Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null, IDbTransaction transaction = null);
     }
 }

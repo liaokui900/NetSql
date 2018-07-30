@@ -6,7 +6,7 @@
     <Authors>Oldli</Authors>
     <PackageProjectUrl>https://github.com/iamoldli/NetSql</PackageProjectUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.2.1</Version>
+    <Version>1.2.4</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

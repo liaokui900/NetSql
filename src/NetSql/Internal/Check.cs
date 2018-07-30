@@ -13,10 +13,11 @@ namespace NetSql.Internal
         /// </summary>
         /// <param name="obj"></param>
         /// <param name="parameterName"></param>
-        public static void NotNull<T>(T obj, string parameterName)
+        /// <param name="message"></param>
+        public static void NotNull<T>(T obj, string parameterName, string message = null)
         {
             if (ReferenceEquals(obj, null))
-                throw new ArgumentNullException($"{parameterName} is null");
+                throw new ArgumentNullException(parameterName, message ?? $"{parameterName} is null");
         }
 
         /// <summary>
@@ -24,10 +25,11 @@ namespace NetSql.Internal
         /// </summary>
         /// <param name="obj"></param>
         /// <param name="parameterName"></param>
-        public static void NotNull(string obj, string parameterName)
+        /// <param name="message"></param>
+        public static void NotNull(string obj, string parameterName, string message = null)
         {
             if (string.IsNullOrWhiteSpace(obj))
-                throw new ArgumentNullException($"{parameterName} is null");
+                throw new ArgumentNullException(parameterName, message ?? $"{parameterName} is null");
         }
 
         /// <summary>

@@ -208,7 +208,7 @@ namespace NetSql.MySql.Test
 
             var sort = new Sort<Article>(Enums.SortType.Desc).OrderBy(m => m.Id);
             var paging = new Paging();
-            var list = _dbContext.Articles.Query(m => m.Id > 10, paging, sort).Result;
+            var list = _dbContext.Articles.PaginationAsync(paging, m => m.Id > 10, sort).Result;
 
             Assert.NotNull(list);
 
@@ -225,7 +225,7 @@ namespace NetSql.MySql.Test
                 Size = 20,
                 Index = 2
             };
-            var list = _dbContext.Articles.Query(m => m.Id > 10, m => new { m.Id }, paging, sort).Result;
+            var list = _dbContext.Articles.PaginationAsync( m => new { m.Id }, paging, m => m.Id > 10, sort).Result;
 
             Assert.NotNull(list);
 
