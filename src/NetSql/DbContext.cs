@@ -19,6 +19,11 @@ namespace NetSql
         /// </summary>
         public IDbContextOptions Options { get; }
 
+        /// <summary>
+        /// 获取一个数据库连接
+        /// </summary>
+        public IDbConnection DbConnection => Options.DbConnection;
+
         #endregion
 
         #region ==构造函数==
@@ -44,21 +49,11 @@ namespace NetSql
         /// 
         /// </summary>
         /// <returns></returns>
-        public IDbConnection OpenConnection()
-        {
-            //使用反射创建
-            var con = Options.DbConnection;
-            con.Open();
-            return con;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
         public IDbTransaction BeginTransaction()
         {
-            return OpenConnection().BeginTransaction();
+            var con = DbConnection;
+            con.Open();
+            return con.BeginTransaction();
         }
 
         /// <summary>

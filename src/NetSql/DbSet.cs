@@ -51,11 +51,10 @@ namespace NetSql
         {
             Check.NotNull(entity, nameof(entity));
 
-            var con = GetCon(transaction);
             if (_descriptor.PrimaryKeyType == PrimaryKeyType.Int)
             {
                 var sql = _sqlStatement.Insert + _sqlAdapter.IdentitySql;
-                var id = await con.ExecuteScalarAsync<int>(sql, entity, transaction);
+                var id = await ExecuteScalarAsync<int>(sql, entity, transaction);
                 if (id > 0)
                 {
                     _descriptor.PrimaryKey.SetValue(entity, id);
@@ -65,7 +64,7 @@ namespace NetSql
             else if (_descriptor.PrimaryKeyType == PrimaryKeyType.Long)
             {
                 var sql = _sqlStatement.Insert + _sqlAdapter.IdentitySql;
-                var id = await con.ExecuteScalarAsync<long>(sql, entity, transaction);
+                var id = await ExecuteScalarAsync<long>(sql, entity, transaction);
                 if (id > 0)
                 {
                     _descriptor.PrimaryKey.SetValue(entity, id);
@@ -74,7 +73,7 @@ namespace NetSql
             }
             else
             {
-                return await con.ExecuteAsync(_sqlStatement.Insert, entity, transaction) > 0;
+                return await ExecuteAsync(_sqlStatement.Insert, entity, transaction) > 0;
             }
 
             return false;
@@ -89,6 +88,7 @@ namespace NetSql
             var commit = false;//标注是否提交事务
             if (transaction == null)
             {
+                con.Open();
                 transaction = con.BeginTransaction();
                 commit = true;
             }
@@ -109,14 +109,20 @@ namespace NetSql
                 }
 
                 if (commit)
+                {
                     transaction.Commit();
+                    con.Close();
+                }
 
                 return Task.FromResult(true);
             }
             catch
             {
                 if (commit)
+                {
                     transaction?.Rollback();
+                    con.Close();
+                }
 
                 throw;
             }
@@ -129,7 +135,7 @@ namespace NetSql
             var dynParms = new DynamicParameters();
             dynParms.Add(_sqlAdapter.AppendParameter("Id"), id);
 
-            return GetCon(transaction).ExecuteAsync(_sqlStatement.DeleteSingle, dynParms, transaction);
+            return ExecuteAsync(_sqlStatement.DeleteSingle, dynParms, transaction);
         }
 
         public Task<int> RemoveAsync(Expression<Func<TEntity, bool>> exp, IDbTransaction transaction = null)
@@ -143,7 +149,7 @@ namespace NetSql
             var sql = new StringBuilder(_sqlStatement.Delete);
             _sqlAdapter.AppendQueryWhere(sql, sqlWhere);
 
-            return GetCon(transaction).ExecuteAsync(sql.ToString(), null, transaction);
+            return ExecuteAsync(sql.ToString(), null, transaction);
         }
 
         public Task<bool> BatchRemoveAsync<T>(IList<T> idList, IDbTransaction transaction = null)
@@ -167,7 +173,7 @@ namespace NetSql
             if (_descriptor.PrimaryKeyType == PrimaryKeyType.NoPrimaryKey)
                 throw new ArgumentException("没有主键的实体对象无法使用该方法", nameof(entity));
 
-            return GetCon(transaction).ExecuteAsync(_sqlStatement.UpdateSingle, entity, transaction);
+            return ExecuteAsync(_sqlStatement.UpdateSingle, entity, transaction);
         }
 
         public Task<int> UpdateAsync(Expression<Func<TEntity, bool>> whereExp, Expression<Func<TEntity, TEntity>> updateEntity, IDbTransaction transaction = null)
@@ -185,7 +191,7 @@ namespace NetSql
 
             var sql = $"{_sqlStatement.Update} {updateSql} WHERE {whereSql}";
 
-            return GetCon(transaction).ExecuteAsync(sql, transaction: transaction);
+            return ExecuteAsync(sql, transaction: transaction);
         }
 
         public Task<bool> BatchUpdateAsync(IList<TEntity> entityList, IDbTransaction transaction = null)
@@ -196,6 +202,7 @@ namespace NetSql
             var commit = false;//标注是否提交事务
             if (transaction == null)
             {
+                con.Open();
                 transaction = con.BeginTransaction();
                 commit = true;
             }
@@ -216,14 +223,20 @@ namespace NetSql
                 }
 
                 if (commit)
+                {
                     transaction.Commit();
+                    con.Close();
+                }
 
                 return Task.FromResult(true);
             }
             catch
             {
                 if (commit)
+                {
                     transaction?.Rollback();
+                    con.Close();
+                }
 
                 throw;
             }
@@ -236,7 +249,7 @@ namespace NetSql
             var dynParms = new DynamicParameters();
             dynParms.Add(_sqlAdapter.AppendParameter("Id"), id);
 
-            return GetCon(transaction).QuerySingleOrDefaultAsync<TEntity>(_sqlStatement.Get, dynParms, transaction);
+            return QuerySingleOrDefaultAsync<TEntity>(_sqlStatement.Get, dynParms, transaction);
         }
 
         public Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> whereExp, ISort sort = null, IDbTransaction transaction = null)
@@ -252,7 +265,7 @@ namespace NetSql
                 sql += sort.Builder();
             }
 
-            return GetCon(transaction).QueryFirstOrDefaultAsync<TEntity>(sql, transaction: transaction);
+            return QueryFirstOrDefaultAsync<TEntity>(sql, transaction: transaction);
         }
 
         public Task<IEnumerable<TEntity>> QueryAsync(Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null, IDbTransaction transaction = null)
@@ -312,13 +325,13 @@ namespace NetSql
             }
 
             var sql = _sqlAdapter.GeneratePagingSql(_descriptor.TableName, whereSql, paging, sort);
-            using (var reader = await GetCon(transaction).QueryMultipleAsync(sql, null, transaction))
-            {
-                var list = await reader.ReadAsync<TEntity>();
-                paging.TotalCount = await reader.ReadSingleAsync<long>();
 
-                return list;
-            }
+            var con = GetCon(transaction);
+            var reader = await con.QueryMultipleAsync(sql, null, transaction);
+            var list = await reader.ReadAsync<TEntity>();
+            paging.TotalCount = await reader.ReadSingleAsync<long>();
+            reader.Dispose();
+            return list;
         }
 
         public async Task<IEnumerable<TEntity>> PaginationAsync<TResult>(Expression<Func<TEntity, TResult>> selectExp, Paging paging, Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null, IDbTransaction transaction = null)
@@ -336,13 +349,13 @@ namespace NetSql
             Check.NotNull(selectSql, nameof(selectExp), "生成返回列sql异常");
 
             var sql = _sqlAdapter.GeneratePagingSql(_descriptor.TableName, whereSql, paging, sort, selectSql);
-            using (var reader = await GetCon(transaction).QueryMultipleAsync(sql, null, transaction))
-            {
-                var list = await reader.ReadAsync<TEntity>();
-                paging.TotalCount = await reader.ReadSingleAsync<long>();
 
-                return list;
-            }
+            var con = GetCon(transaction);
+            var reader = await con.QueryMultipleAsync(sql, null, transaction);
+            var list = await reader.ReadAsync<TEntity>();
+            paging.TotalCount = await reader.ReadSingleAsync<long>();
+            reader.Dispose();
+            return list;
         }
 
         #endregion
@@ -363,6 +376,7 @@ namespace NetSql
         {
             return GetCon(transaction).QueryFirstOrDefaultAsync<T>(sql, param, transaction, commandType: commandType);
         }
+
         public Task<T> QuerySingleOrDefaultAsync<T>(string sql, object param = null, IDbTransaction transaction = null, CommandType? commandType = null)
         {
             return GetCon(transaction).QuerySingleOrDefaultAsync<T>(sql, param, transaction, commandType: commandType);
@@ -384,7 +398,7 @@ namespace NetSql
         /// <returns></returns>
         private IDbConnection GetCon(IDbTransaction transaction)
         {
-            return transaction == null ? _context.OpenConnection() : transaction.Connection;
+            return transaction == null ? _context.DbConnection : transaction.Connection;
         }
 
         /// <summary>

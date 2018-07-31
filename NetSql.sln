@@ -23,11 +23,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetSql.AspNetCore", "src\Ne
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DDDLite", "DDDLite", "{BA6E6B9F-C81D-4C64-B413-7B8029E679FA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetSql.DDDLite", "src\NetSql.DDDLite\NetSql.DDDLite.csproj", "{2132044E-FCB6-436A-BF7A-973199B3D8F5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetSql.DDDLite", "src\NetSql.DDDLite\NetSql.DDDLite.csproj", "{2132044E-FCB6-436A-BF7A-973199B3D8F5}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Sample", "Sample", "{61A1BD17-815D-48EE-BFF9-4605769390E1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetSql.Sample.AspNetCore", "sample\NetSql.Sample.AspNetCore\NetSql.Sample.AspNetCore.csproj", "{9140F1EF-7091-4A25-8DB6-E4FEC7DBA83B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetSql.Sample.AspNetCore", "sample\NetSql.Sample.AspNetCore\NetSql.Sample.AspNetCore.csproj", "{9140F1EF-7091-4A25-8DB6-E4FEC7DBA83B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetSql.DDDLite.Test", "test\NetSql.DDDLite.Test\NetSql.DDDLite.Test.csproj", "{C26EB604-4A0B-48F0-8AB2-53D3F477A2D8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -67,6 +69,10 @@ Global
 		{9140F1EF-7091-4A25-8DB6-E4FEC7DBA83B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9140F1EF-7091-4A25-8DB6-E4FEC7DBA83B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9140F1EF-7091-4A25-8DB6-E4FEC7DBA83B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C26EB604-4A0B-48F0-8AB2-53D3F477A2D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C26EB604-4A0B-48F0-8AB2-53D3F477A2D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C26EB604-4A0B-48F0-8AB2-53D3F477A2D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C26EB604-4A0B-48F0-8AB2-53D3F477A2D8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -82,6 +88,7 @@ Global
 		{BA6E6B9F-C81D-4C64-B413-7B8029E679FA} = {D0F77D39-6675-49B7-AF25-6BA6F3E45690}
 		{2132044E-FCB6-436A-BF7A-973199B3D8F5} = {BA6E6B9F-C81D-4C64-B413-7B8029E679FA}
 		{9140F1EF-7091-4A25-8DB6-E4FEC7DBA83B} = {61A1BD17-815D-48EE-BFF9-4605769390E1}
+		{C26EB604-4A0B-48F0-8AB2-53D3F477A2D8} = {BD3DC076-4208-47EB-98AE-E62A052AE03A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {67765F0C-1ACA-49B4-BDE8-2AB939C7321E}

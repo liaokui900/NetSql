@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using NetSql.Internal;
 using NetSql.Pagination;
+using NetSql.Test.Common;
 using NetSql.Test.Common.Model;
 using Xunit;
 

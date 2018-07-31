@@ -7,7 +7,7 @@
     <PackageProjectUrl>https://github.com/iamoldli/NetSql</PackageProjectUrl>
     <RepositoryUrl>https://github.com/iamoldli/NetSql</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.2.5</Version>
+    <Version>1.2.6</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

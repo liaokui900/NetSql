@@ -1,13 +1,13 @@
 ﻿using NetSql.SQLite;
 using NetSql.Test.Common.Model;
 
-namespace NetSql.MySql.Test
+namespace NetSql.Test.Common
 {
     public class BlogDbContext : DbContext
     {
         public IDbSet<Article> Articles { get; set; }
 
-        public BlogDbContext() : base(new SQLiteDbContextOptions("Filename=./Database/Test.db"))
+        public BlogDbContext(IDbContextOptions options) : base(options)
         {
         }
     }

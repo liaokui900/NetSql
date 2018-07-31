@@ -6,7 +6,7 @@
     <Authors>Oldli</Authors>
     <Description>经典DDD</Description>
     <PackageProjectUrl>https://github.com/iamoldli/NetSql</PackageProjectUrl>
-    <Version>1.2.5</Version>
+    <Version>1.2.6</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

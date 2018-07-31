@@ -17,7 +17,7 @@ namespace NetSql
         /// 打开一个数据库连接
         /// </summary>
         /// <returns></returns>
-        IDbConnection OpenConnection();
+        IDbConnection DbConnection { get; }
 
         /// <summary>
         /// 打开一个事务

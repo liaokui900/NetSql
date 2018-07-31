@@ -5,6 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\NetSql.DDDLite\NetSql.DDDLite.csproj" />
+    <ProjectReference Include="..\..\src\NetSql.SQLite\NetSql.SQLite.csproj" />
     <ProjectReference Include="..\..\src\NetSql\NetSql.csproj" />
   </ItemGroup>
 
