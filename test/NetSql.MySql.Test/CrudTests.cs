@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using NetSql.Internal;
 using NetSql.Pagination;
+using NetSql.SQLite;
 using NetSql.Test.Common;
 using NetSql.Test.Common.Model;
 using Xunit;
@@ -11,7 +12,7 @@ namespace NetSql.MySql.Test
 {
     public class CrudTests
     {
-        private readonly BlogDbContext _dbContext = new BlogDbContext();
+        private readonly BlogDbContext _dbContext = new BlogDbContext(new SQLiteDbContextOptions("Filename=./Database/Test.db"));
 
         [Fact]
         public void AddTest()
@@ -226,7 +227,7 @@ namespace NetSql.MySql.Test
                 Size = 20,
                 Index = 2
             };
-            var list = _dbContext.Articles.PaginationAsync( m => new { m.Id }, paging, m => m.Id > 10, sort).Result;
+            var list = _dbContext.Articles.PaginationAsync(m => new { m.Id }, paging, m => m.Id > 10, sort).Result;
 
             Assert.NotNull(list);
 

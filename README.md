@@ -40,22 +40,19 @@ using NetSql.Test.Common.Model;
 
 namespace NetSql.MySql.Test
 {
-    public class BlogDbContext : NetSqlDbContext
+    public class BlogDbContext : DbContext
     {
         public IDbSet<Article> Articles { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        public BlogDbContext(IDbContextOptions options) : base(options)
         {
-            //optionsBuilder.UseSqlServer("");
-            //optionsBuilder.UseMySql("");
-            optionsBuilder.UseSQLite("Filename=./Database/Test.db");
         }
     }
 }
 ```
 ### 3、创建DbContext实例
 ``` C#
-private readonly BlogDbContext _dbContext = new BlogDbContext();
+private readonly BlogDbContext _dbContext = new BlogDbContext(new SQLiteDbContextOptions("Filename=./Database/Test.db"));
 ```
 ### 4、添加
 ``` C#
@@ -154,15 +151,17 @@ var entity = _dbContext.Articles.GetAsync(m => m.Id > 10, sort).Result;
 ``` C#
 var sort = new Sort<Article>(Enums.SortType.Desc).OrderBy(m => m.Id);
 var paging = new Paging();
-var list = _dbContext.Articles.Query(m => m.Id > 10, paging, sort).Result;
+var list = _dbContext.Articles.PaginationAsync(paging, m => m.Id > 10, sort).Result;
 ```
 ### 15、根据Lambda表达式分页查询列表，返回指定列数据
 ``` C#
 var sort = new Sort<Article>(Enums.SortType.Desc).OrderBy(m => m.Id);
-var paging = new Paging();
-paging.Size = 20;
-paging.Index = 2;
-var list = _dbContext.Articles.Query(m => m.Id > 10, m => new { m.Id }, paging, sort).Result;
+var paging = new Paging
+{
+    Size = 20,
+    Index = 2
+};
+var list = _dbContext.Articles.PaginationAsync( m => new { m.Id }, paging, m => m.Id > 10, sort).Result;
 ```
 # 其他用法
 ## 1、指定表名称
