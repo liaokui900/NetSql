@@ -1,18 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
 using System.Threading.Tasks;
 using Dapper;
 using NetSql.Entities;
 using NetSql.Enums;
 using NetSql.Expressions;
 using NetSql.Internal;
-using NetSql.Pagination;
 using NetSql.SqlAdapter;
-using DbType = NetSql.Enums.DbType;
+using NetSql.SqlQueryable;
 
 namespace NetSql
 {
@@ -28,8 +25,6 @@ namespace NetSql
 
         private readonly ISqlAdapter _sqlAdapter;
 
-        private readonly IExpressionContext _expressionContext;
-
         #endregion
 
         #region ==构造函数==
@@ -40,14 +35,16 @@ namespace NetSql
             _context = context;
             _descriptor = EntityCollection.TryGet<TEntity>();
             _sqlStatement = new EntitySqlStatement(_descriptor, sqlAdapter);
-            _expressionContext = new ExpressionContext(sqlAdapter, _descriptor);
         }
 
         #endregion
 
-        #region ==CRUD操作方法==
+        public IDbTransaction BeginTransaction()
+        {
+            return _context.BeginTransaction();
+        }
 
-        public async Task<bool> AddAsync(TEntity entity, IDbTransaction transaction = null)
+        public async Task<bool> InsertAsync(TEntity entity, IDbTransaction transaction = null)
         {
             Check.NotNull(entity, nameof(entity));
 
@@ -79,167 +76,24 @@ namespace NetSql
             return false;
         }
 
-        public Task<bool> BatchAddtAsync(IList<TEntity> entityList, IDbTransaction transaction = null)
-        {
-            if (entityList == null || !entityList.Any())
-                return Task.FromResult(false);
-
-            var con = GetCon(transaction);
-            var commit = false;//标注是否提交事务
-            if (transaction == null)
-            {
-                con.Open();
-                transaction = con.BeginTransaction();
-                commit = true;
-            }
-
-            try
-            {
-                if (DbType.SqlServer == _context.Options.DbType)
-                {
-                    SqlServerBatchInsert(entityList, transaction);
-                }
-                else if (DbType.MySql == _context.Options.DbType)
-                {
-                    MySqlBatchInsert(entityList, transaction);
-                }
-                else if (DbType.SQLite == _context.Options.DbType)
-                {
-                    SQLiteBatchInsert(entityList, transaction);
-                }
-
-                if (commit)
-                {
-                    transaction.Commit();
-                    con.Close();
-                }
-
-                return Task.FromResult(true);
-            }
-            catch
-            {
-                if (commit)
-                {
-                    transaction?.Rollback();
-                    con.Close();
-                }
-
-                throw;
-            }
-        }
-
-        public Task<int> RemoveAsync(dynamic id, IDbTransaction transaction = null)
+        public async Task<bool> DeleteAsync(dynamic id, IDbTransaction transaction = null)
         {
             PrimaryKeyValidate(id);
 
             var dynParms = new DynamicParameters();
             dynParms.Add(_sqlAdapter.AppendParameter("Id"), id);
 
-            return ExecuteAsync(_sqlStatement.DeleteSingle, dynParms, transaction);
+            return await ExecuteAsync(_sqlStatement.DeleteSingle, dynParms, transaction) > 0;
         }
 
-        public Task<int> RemoveAsync(Expression<Func<TEntity, bool>> exp, IDbTransaction transaction = null)
-        {
-            Check.NotNull(exp, nameof(exp));
-
-            var sqlWhere = _expressionContext.ToSql(exp);
-            if (string.IsNullOrWhiteSpace(sqlWhere))
-                throw new ArgumentException("无效的表达式", nameof(exp));
-
-            var sql = new StringBuilder(_sqlStatement.Delete);
-            _sqlAdapter.AppendQueryWhere(sql, sqlWhere);
-
-            return ExecuteAsync(sql.ToString(), null, transaction);
-        }
-
-        public Task<bool> BatchRemoveAsync<T>(IList<T> idList, IDbTransaction transaction = null)
-        {
-            //没有主键的表无法批量删除
-            if (_descriptor.PrimaryKeyType == PrimaryKeyType.NoPrimaryKey)
-                throw new ArgumentException("没有主键的表无法删除单条记录", nameof(idList));
-
-            if (idList == null || !idList.Any())
-                return Task.FromResult(false);
-
-            var queryWhere = $" Id IN ({string.Join(",", idList)})";
-
-            return DeleteWhereAsync(queryWhere, null, transaction);
-        }
-
-        public Task<int> UpdateAsync(TEntity entity, IDbTransaction transaction = null)
+        public async Task<bool> UpdateAsync(TEntity entity, IDbTransaction transaction = null)
         {
             Check.NotNull(entity, nameof(entity));
 
             if (_descriptor.PrimaryKeyType == PrimaryKeyType.NoPrimaryKey)
                 throw new ArgumentException("没有主键的实体对象无法使用该方法", nameof(entity));
 
-            return ExecuteAsync(_sqlStatement.UpdateSingle, entity, transaction);
-        }
-
-        public Task<int> UpdateAsync(Expression<Func<TEntity, bool>> whereExp, Expression<Func<TEntity, TEntity>> updateEntity, IDbTransaction transaction = null)
-        {
-            Check.NotNull(whereExp, nameof(whereExp));
-            Check.NotNull(updateEntity, nameof(updateEntity));
-
-            var updateSql = _expressionContext.ToSql(updateEntity);
-            if (string.IsNullOrWhiteSpace(updateSql))
-                throw new Exception("生成sql异常");
-
-            var whereSql = _expressionContext.ToSql(whereExp);
-            if (string.IsNullOrWhiteSpace(whereSql))
-                throw new Exception("生成sql异常");
-
-            var sql = $"{_sqlStatement.Update} {updateSql} WHERE {whereSql}";
-
-            return ExecuteAsync(sql, transaction: transaction);
-        }
-
-        public Task<bool> BatchUpdateAsync(IList<TEntity> entityList, IDbTransaction transaction = null)
-        {
-            Check.Collection(entityList, nameof(entityList));
-
-            var con = GetCon(transaction);
-            var commit = false;//标注是否提交事务
-            if (transaction == null)
-            {
-                con.Open();
-                transaction = con.BeginTransaction();
-                commit = true;
-            }
-
-            try
-            {
-                if (DbType.SqlServer == _context.Options.DbType)
-                {
-                    SqlServerBatchUpdate(entityList, transaction);
-                }
-                else if (DbType.MySql == _context.Options.DbType)
-                {
-                    MySqlBatchUpdate(entityList, transaction);
-                }
-                else if (DbType.SQLite == _context.Options.DbType)
-                {
-                    SQLiteBatchUpdate(entityList, transaction);
-                }
-
-                if (commit)
-                {
-                    transaction.Commit();
-                    con.Close();
-                }
-
-                return Task.FromResult(true);
-            }
-            catch
-            {
-                if (commit)
-                {
-                    transaction?.Rollback();
-                    con.Close();
-                }
-
-                throw;
-            }
+            return await ExecuteAsync(_sqlStatement.UpdateSingle, entity, transaction) > 0;
         }
 
         public Task<TEntity> GetAsync(dynamic id, IDbTransaction transaction = null)
@@ -252,115 +106,10 @@ namespace NetSql
             return QuerySingleOrDefaultAsync<TEntity>(_sqlStatement.Get, dynParms, transaction);
         }
 
-        public Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> whereExp, ISort sort = null, IDbTransaction transaction = null)
+        public INetSqlQueryable<TEntity> Find(Expression<Func<TEntity, bool>> expression = null, IDbTransaction transaction = null)
         {
-            Check.NotNull(whereExp, nameof(whereExp));
-
-            var whereSql = _expressionContext.ToSql(whereExp);
-            Check.NotNull(whereSql, nameof(whereExp), "生成查询条件sql异常");
-
-            var sql = $"{_sqlStatement.Query} WHERE {whereSql}";
-            if (sort != null)
-            {
-                sql += sort.Builder();
-            }
-
-            return QueryFirstOrDefaultAsync<TEntity>(sql, transaction: transaction);
+            return new NetSqlQueryable<TEntity>(expression, this, _descriptor, _sqlStatement, _sqlAdapter, transaction);
         }
-
-        public Task<IEnumerable<TEntity>> QueryAsync(Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null, IDbTransaction transaction = null)
-        {
-            var sql = new StringBuilder(_sqlStatement.Query);
-            if (whereExp != null)
-            {
-                var whereSql = _expressionContext.ToSql(whereExp);
-                Check.NotNull(whereSql, nameof(whereExp), "生成查询条件sql异常");
-
-                sql.Append(" WHERE ");
-                sql.Append(whereSql);
-            }
-
-            if (sort != null)
-            {
-                sql.AppendFormat(" {0};", sort.Builder());
-            }
-
-            return QueryAsync<TEntity>(sql.ToString(), null, transaction);
-        }
-
-        public Task<IEnumerable<TEntity>> QueryPartialFieldAsync<TResult>(Expression<Func<TEntity, TResult>> selectExp, Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null, IDbTransaction transaction = null)
-        {
-            Check.NotNull(selectExp, nameof(selectExp));
-
-            var selectSql = _expressionContext.ToSelectSql(selectExp);
-            Check.NotNull(selectSql, nameof(selectExp), "生成返回列sql异常");
-
-            var sql = new StringBuilder("SELECT ");
-            sql.AppendFormat("{0} FROM {1} ", selectSql, _descriptor.TableName);
-
-            if (whereExp != null)
-            {
-                var whereSql = _expressionContext.ToSql(whereExp);
-                Check.NotNull(whereSql, nameof(whereExp), "生成查询条件sql异常");
-
-                sql.Append("WHERE ");
-                sql.Append(whereSql);
-            }
-
-            if (sort != null)
-            {
-                sql.Append(sort.Builder());
-            }
-
-            return QueryAsync<TEntity>(sql.ToString(), null, transaction);
-        }
-
-        public async Task<IEnumerable<TEntity>> PaginationAsync(Paging paging, Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null, IDbTransaction transaction = null)
-        {
-            string whereSql = string.Empty;
-            if (whereExp != null)
-            {
-                whereSql = _expressionContext.ToSql(whereExp);
-                Check.NotNull(whereSql, nameof(whereExp), "生成查询条件sql异常");
-            }
-
-            var sql = _sqlAdapter.GeneratePagingSql(_descriptor.TableName, whereSql, paging, sort);
-
-            var con = GetCon(transaction);
-            var reader = await con.QueryMultipleAsync(sql, null, transaction);
-            var list = await reader.ReadAsync<TEntity>();
-            paging.TotalCount = await reader.ReadSingleAsync<long>();
-            reader.Dispose();
-            return list;
-        }
-
-        public async Task<IEnumerable<TEntity>> PaginationAsync<TResult>(Expression<Func<TEntity, TResult>> selectExp, Paging paging, Expression<Func<TEntity, bool>> whereExp = null, ISort sort = null, IDbTransaction transaction = null)
-        {
-            Check.NotNull(selectExp, nameof(selectExp));
-
-            string whereSql = string.Empty;
-            if (whereExp != null)
-            {
-                whereSql = _expressionContext.ToSql(whereExp);
-                Check.NotNull(whereSql, nameof(whereExp), "生成查询条件sql异常");
-            }
-
-            var selectSql = _expressionContext.ToSelectSql(selectExp);
-            Check.NotNull(selectSql, nameof(selectExp), "生成返回列sql异常");
-
-            var sql = _sqlAdapter.GeneratePagingSql(_descriptor.TableName, whereSql, paging, sort, selectSql);
-
-            var con = GetCon(transaction);
-            var reader = await con.QueryMultipleAsync(sql, null, transaction);
-            var list = await reader.ReadAsync<TEntity>();
-            paging.TotalCount = await reader.ReadSingleAsync<long>();
-            reader.Dispose();
-            return list;
-        }
-
-        #endregion
-
-        #region ==数据库方法==
 
         public Task<int> ExecuteAsync(string sql, object param = null, IDbTransaction transaction = null, CommandType? commandType = null)
         {
@@ -386,8 +135,6 @@ namespace NetSql
         {
             return GetCon(transaction).QueryAsync<T>(sql, param, transaction, commandType: commandType);
         }
-
-        #endregion
 
         #region ==私有方法==
 
@@ -423,218 +170,6 @@ namespace NetSql
                     throw new ArgumentException("主键不能为空~");
             }
         }
-
-        /// <summary>
-        /// 根据条件删除数据
-        /// </summary>
-        /// <param name="queryWhere"></param>
-        /// <param name="param"></param>
-        /// <param name="transaction"></param>
-        /// <returns></returns>
-        private async Task<bool> DeleteWhereAsync(string queryWhere, object param = null, IDbTransaction transaction = null)
-        {
-            if (string.IsNullOrWhiteSpace(queryWhere))
-                return false;
-
-            var sql = _sqlStatement.Delete + _sqlAdapter.AppendQueryWhere(queryWhere);
-
-            return await GetCon(transaction).ExecuteAsync(sql, param, transaction) > 0;
-        }
-
-        #region ==批量插入==
-
-        /// <summary>
-        /// SqlServer批量插入
-        /// </summary>
-        /// <param name="entityList"></param>
-        /// <param name="transaction"></param>
-        private void SqlServerBatchInsert(IList<TEntity> entityList, IDbTransaction transaction)
-        {
-            var tasks = new List<Task>();
-
-            var sqlSb = new StringBuilder();
-            for (var i = 0; i < entityList.Count; i++)
-            {
-                sqlSb.Append(GenerateInsertSql(entityList[i]));
-
-                if (i == entityList.Count - 1 || sqlSb.Length > 1048576)//1MB
-                {
-                    tasks.Add(transaction.Connection.ExecuteAsync(sqlSb.ToString(), null, transaction));
-
-                    sqlSb.Clear();
-                }
-            }
-
-            Task.WaitAll(tasks.ToArray());
-        }
-
-        /// <summary>
-        /// MySql批量插入
-        /// </summary>
-        /// <param name="entityList"></param>
-        /// <param name="transaction"></param>
-        private void MySqlBatchInsert(IList<TEntity> entityList, IDbTransaction transaction)
-        {
-            var tasks = new List<Task>();
-
-            var sqlSb = new StringBuilder();
-            for (var i = 0; i < entityList.Count; i++)
-            {
-                sqlSb.Append(GenerateInsertSql(entityList[i]));
-
-                if (i == entityList.Count - 1 || sqlSb.Length > 524288)//512KB
-                {
-                    tasks.Add(transaction.Connection.ExecuteAsync(sqlSb.ToString(), null, transaction));
-
-                    sqlSb.Clear();
-                }
-            }
-
-            Task.WaitAll(tasks.ToArray());
-        }
-
-        /// <summary>
-        /// SQLite批量插入
-        /// </summary>
-        /// <param name="entityList"></param>
-        /// <param name="transaction"></param>
-        /// <returns></returns>
-        private void SQLiteBatchInsert(IList<TEntity> entityList, IDbTransaction transaction)
-        {
-            var tasks = new Task[entityList.Count];
-            for (var i = 0; i < entityList.Count; i++)
-            {
-                var entity = entityList[i];
-                tasks[i] = transaction.Connection.ExecuteAsync(GenerateInsertSql(entity), null, transaction);
-            }
-
-            Task.WaitAll(tasks);
-        }
-
-        /// <summary>
-        /// 根据实体对象生成插入语句
-        /// </summary>
-        /// <param name="entity"></param>
-        /// <returns></returns>
-        private string GenerateInsertSql(TEntity entity)
-        {
-            var sb = new StringBuilder(_sqlStatement.Insert);
-
-            ReplaceParameter(sb, entity);
-
-            return sb.ToString();
-        }
-
-        #endregion
-
-        #region ==批量更新==
-
-        /// <summary>
-        /// SqlServer批量插入
-        /// </summary>
-        /// <param name="entityList"></param>
-        /// <param name="transaction"></param>
-        private void SqlServerBatchUpdate(IList<TEntity> entityList, IDbTransaction transaction)
-        {
-            var tasks = new List<Task>();
-
-            var sqlSb = new StringBuilder();
-            for (var i = 0; i < entityList.Count; i++)
-            {
-                sqlSb.Append(GenerateUpdateSql(entityList[i]));
-
-                if (i == entityList.Count - 1 || sqlSb.Length > 1048576)//1MB
-                {
-                    tasks.Add(transaction.Connection.ExecuteAsync(sqlSb.ToString(), null, transaction));
-
-                    sqlSb.Clear();
-                }
-            }
-
-            Task.WaitAll(tasks.ToArray());
-        }
-
-        /// <summary>
-        /// MySql批量插入
-        /// </summary>
-        /// <param name="entityList"></param>
-        /// <param name="transaction"></param>
-        private void MySqlBatchUpdate(IList<TEntity> entityList, IDbTransaction transaction)
-        {
-            var tasks = new List<Task>();
-
-            var sqlSb = new StringBuilder();
-            for (var i = 0; i < entityList.Count; i++)
-            {
-                sqlSb.Append(GenerateUpdateSql(entityList[i]));
-
-                if (i == entityList.Count - 1 || sqlSb.Length > 524288)//512KB
-                {
-                    tasks.Add(transaction.Connection.ExecuteAsync(sqlSb.ToString(), null, transaction));
-
-                    sqlSb.Clear();
-                }
-            }
-
-            Task.WaitAll(tasks.ToArray());
-        }
-
-        /// <summary>
-        /// SQLite批量插入
-        /// </summary>
-        /// <param name="entityList"></param>
-        /// <param name="transaction"></param>
-        /// <returns></returns>
-        private void SQLiteBatchUpdate(IList<TEntity> entityList, IDbTransaction transaction)
-        {
-            var tasks = new Task[entityList.Count];
-            for (var i = 0; i < entityList.Count; i++)
-            {
-                var entity = entityList[i];
-                tasks[i] = transaction.Connection.ExecuteAsync(GenerateUpdateSql(entity), null, transaction);
-            }
-
-            Task.WaitAll(tasks);
-        }
-
-        /// <summary>
-        /// 根据实体对象生成更新语句
-        /// </summary>
-        /// <param name="entity"></param>
-        /// <returns></returns>
-        private string GenerateUpdateSql(TEntity entity)
-        {
-            var sb = new StringBuilder(_sqlStatement.UpdateSingle);
-
-            ReplaceParameter(sb, entity);
-
-            return sb.ToString();
-        }
-
-        #endregion
-
-        /// <summary>
-        /// 替换语句中的参数
-        /// </summary>
-        /// <param name="sb"></param>
-        /// <param name="entity"></param>
-        private void ReplaceParameter(StringBuilder sb, TEntity entity)
-        {
-            foreach (var col in _descriptor.Columns)
-            {
-                var name = col.PropertyInfo.Name;
-
-                if (col.PropertyType == typeof(string) || col.PropertyType == typeof(DateTime) || col.PropertyType == typeof(char))
-                    sb.Replace(_sqlAdapter.AppendParameter(name), $"'{col.GetValue(entity)}'");
-                else if (col.PropertyType.IsEnum)
-                    sb.Replace(_sqlAdapter.AppendParameter(name), col.GetValue(entity).ToInt().ToString());
-                else if (col.PropertyType == typeof(bool))
-                    sb.Replace(_sqlAdapter.AppendParameter(name), col.GetValue(entity).ToBool().ToIntString());
-                else
-                    sb.Replace(_sqlAdapter.AppendParameter(name), col.GetValue(entity).ToString());
-            }
-        }
-
         #endregion
     }
 }

@@ -100,9 +100,9 @@ namespace NetSql.Entities
         /// </summary>
         private void SetDeleteSql()
         {
-            Delete = $"DELETE FROM {_descriptor.TableName} ";
+            Delete = $"DELETE FROM {_sqlAdapter.AppendQuote(_descriptor.TableName)} ";
             if (_descriptor.PrimaryKeyType != PrimaryKeyType.NoPrimaryKey)
-                DeleteSingle = $"DELETE FROM {_descriptor.TableName} WHERE {_sqlAdapter.AppendQuote(_descriptor.PrimaryKey.Name)}={_sqlAdapter.AppendParameter(_descriptor.PrimaryKey.PropertyInfo.Name)};";
+                DeleteSingle = $"{Delete} WHERE {_sqlAdapter.AppendQuote(_descriptor.PrimaryKey.Name)}={_sqlAdapter.AppendParameter(_descriptor.PrimaryKey.PropertyInfo.Name)};";
         }
 
         /// <summary>
@@ -145,7 +145,10 @@ namespace NetSql.Entities
             for (var i = 0; i < _descriptor.Columns.Count; i++)
             {
                 var col = _descriptor.Columns[i];
-                sb.AppendFormat("{0} AS '{1}'", _sqlAdapter.AppendQuote(col.Name), col.PropertyInfo.Name);
+                if (col.Name.Equals(col.PropertyInfo.Name))
+                    sb.Append(_sqlAdapter.AppendQuote(col.Name));
+                else
+                    sb.AppendFormat("{0} AS '{1}'", _sqlAdapter.AppendQuote(col.Name), col.PropertyInfo.Name);
                 if (i != _descriptor.Columns.Count - 1)
                 {
                     sb.Append(",");

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using NetSql.Internal;
 using NetSql.Pagination;
 using NetSql.SqlAdapter;
 
@@ -23,18 +24,18 @@ namespace NetSql.MySql
         /// </summary>
         public override string IdentitySql => "SELECT LAST_INSERT_ID() ID;";
 
-        public override string GeneratePagingSql(string tableName, string queryWhere, Paging paging, ISort sort = null, string columns = null)
+        public override string GeneratePagingSql(string tableName, string queryWhere, int skip, int size, string sort = null, string columns = null)
         {
-            if (string.IsNullOrWhiteSpace(columns))
+            if (columns.IsNull())
                 columns = "*";
 
-            var sb = new StringBuilder($"SELECT SQL_CALC_FOUND_ROWS {columns} FROM {tableName}");
+            var sb = new StringBuilder($"SELECT SQL_CALC_FOUND_ROWS {columns} FROM {AppendQuote(tableName)} ");
             AppendQueryWhere(sb, queryWhere);
-            if (sort != null)
+            if (!sort.IsNull())
             {
-                sb.Append(sort.Builder());
+                sb.AppendFormat(" {0} ", sort);
             }
-            sb.AppendFormat(" LIMIT {0},{1};SELECT CAST(FOUND_ROWS() as SIGNED) AS TotalCount;", paging.Skip, paging.Size);
+            sb.AppendFormat(" LIMIT {0},{1};", skip, size);
             return sb.ToString();
         }
     }

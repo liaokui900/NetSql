@@ -67,6 +67,10 @@ namespace NetSql.Pagination
         /// 总页数
         /// </summary>
         public long TotalPage => (TotalCount - 1 + Size) / Size;
-    }
 
+        /// <summary>
+        /// 排序
+        /// </summary>
+        public List<Sort> OrderBy { get; } = new List<Sort>();
+    }
 }

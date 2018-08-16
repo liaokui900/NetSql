@@ -1,4 +1,6 @@
-﻿namespace NetSql.Entities
+﻿using NetSql.Mapper;
+
+namespace NetSql.Entities
 {
     /// <summary>
     /// 实体基类

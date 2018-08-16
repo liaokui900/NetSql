@@ -61,7 +61,7 @@ namespace NetSql
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
         /// <returns></returns>
-        public IDbSet<TEntity> DbSet<TEntity>() where TEntity : Entity, new()
+        public IDbSet<TEntity> Set<TEntity>() where TEntity : Entity, new()
         {
             var properties = GetType().GetRuntimeProperties()
                 .Where(p => !p.IsStatic()

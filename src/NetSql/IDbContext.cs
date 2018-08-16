@@ -30,6 +30,6 @@ namespace NetSql
         /// </summary>
         /// <typeparam name="TEntity"></typeparam>
         /// <returns></returns>
-        IDbSet<TEntity> DbSet<TEntity>() where TEntity : Entity, new();
+        IDbSet<TEntity> Set<TEntity>() where TEntity : Entity, new();
     }
 }

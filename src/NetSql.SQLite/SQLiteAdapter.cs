@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using NetSql.Internal;
 using NetSql.Pagination;
 using NetSql.SqlAdapter;
 
@@ -26,28 +27,24 @@ namespace NetSql.SQLite
         /// </summary>
         /// <param name="tableName">表名</param>
         /// <param name="queryWhere">查询条件</param>
-        /// <param name="paging">分页类</param>
+        /// <param name="skip"></param>
+        /// <param name="size"></param>
         /// <param name="sort">排序</param>
         /// <returns></returns>
-        public override string GeneratePagingSql(string tableName, string queryWhere, Paging paging, ISort sort = null, string columns = null)
+        public override string GeneratePagingSql(string tableName, string queryWhere, int skip, int size, string sort = null, string columns = null)
         {
-            if (string.IsNullOrWhiteSpace(columns))
+            if (columns.IsNull())
                 columns = "*";
 
             var sql = new StringBuilder($"SELECT {columns} FROM ");
-            sql.Append(tableName);
+            sql.AppendFormat(" {0} ", AppendQuote(tableName));
             AppendQueryWhere(sql, queryWhere);
-            if (sort != null)
+            if (!sort.IsNull())
             {
-                sql.Append(sort.Builder());
+                sql.AppendFormat(" {0} ", sort);
             }
 
-            sql.AppendFormat(" LIMIT {0} OFFSET {1};", paging.Size, paging.Skip);
-
-            //总数量
-            sql.Append("SELECT COUNT(0) AS TotalCount FROM ");
-            sql.Append(tableName);
-            AppendQueryWhere(sql, queryWhere);
+            sql.AppendFormat(" LIMIT {0} OFFSET {1};", size, skip);
 
             return sql.ToString();
         }

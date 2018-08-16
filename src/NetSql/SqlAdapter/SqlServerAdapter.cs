@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using NetSql.Internal;
 using NetSql.Pagination;
 
 namespace NetSql.SqlAdapter
@@ -25,27 +26,24 @@ namespace NetSql.SqlAdapter
         /// </summary>
         /// <param name="tableName">表名</param>
         /// <param name="queryWhere">查询条件</param>
-        /// <param name="paging">分页类</param>
+        /// <param name="size"></param>
         /// <param name="sort">排序</param>
         /// <param name="columns"></param>
+        /// <param name="skip"></param>
         /// <returns></returns>
-        public override string GeneratePagingSql(string tableName, string queryWhere, Paging paging, ISort sort = null, string columns = null)
+        public override string GeneratePagingSql(string tableName, string queryWhere, int skip, int size, string sort = null, string columns = null)
         {
-            if (string.IsNullOrWhiteSpace(columns))
+            if (columns.IsNull())
                 columns = "*";
 
-            var sql = new StringBuilder($"SELECT {columns} FROM {tableName}");
+            var sql = new StringBuilder($"SELECT {columns} FROM {AppendQuote(tableName)} ");
             AppendQueryWhere(sql, queryWhere);
-            if (sort != null)
+            if (!sort.IsNull())
             {
-                sql.Append(sort.Builder());
+                sql.AppendFormat(" {0} ", sort);
             }
-            sql.AppendFormat(" OFFSET {0} ROW FETCH NEXT {1} ROWS ONLY;", paging.Skip, paging.Size);
 
-            //查询总数量语句
-            sql.Append("SELECT CAST(COUNT(0) AS BIGINT) AS TotalCount FROM ");
-            sql.Append(tableName);
-            AppendQueryWhere(sql, queryWhere);
+            sql.AppendFormat(" OFFSET {0} ROW FETCH NEXT {1} ROWS ONLY;", skip, size);
 
             return sql.ToString();
         }
