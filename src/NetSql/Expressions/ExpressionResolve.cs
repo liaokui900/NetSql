@@ -246,6 +246,10 @@ namespace NetSql.Expressions
             {
                 ContainsResolve(callExp);
             }
+            else if (methodName.Equals("Equals"))
+            {
+                EqualsResolve(callExp);
+            }
             else
             {
                 DynamicInvokeResolve(exp);
@@ -579,6 +583,28 @@ namespace NetSql.Expressions
             }
         }
 
+        private void EqualsResolve(MethodCallExpression exp)
+        {
+            if (exp.Object is MemberExpression objExp && objExp.Expression.NodeType == ExpressionType.Parameter)
+            {
+                var col = GetColumn(objExp.Member);
+                if (col == null)
+                    return;
+
+                string value;
+                if (exp.Arguments[0] is ConstantExpression c)
+                {
+                    value = c.Value.ToString();
+                }
+                else
+                {
+                    value = DynamicInvoke(exp.Arguments[0]).ToString();
+                }
+
+                _sqlBuilder.AppendFormat("{0} = '{1}'", _sqlAdapter.AppendQuote(col.Name), value);
+            }
+        }
+
         private void NotResolve(Expression exp)
         {
             if (exp == null)
@@ -603,7 +629,7 @@ namespace NetSql.Expressions
                     var col = GetColumn(assignment.Member);
                     if (col != null)
                     {
-                        _sqlBuilder.AppendFormat("{0}=", col.Name);
+                        _sqlBuilder.AppendFormat("{0}=", _sqlAdapter.AppendQuote(col.Name));
                         Resolve(assignment.Expression);
                         _sqlBuilder.Append(",");
                     }

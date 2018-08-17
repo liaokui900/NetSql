@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using NetSql.Entities;
 using NetSql.Pagination;
+using NetSql.SqlQueryable;
 
 namespace NetSql.Repository
 {
@@ -61,12 +62,20 @@ namespace NetSql.Repository
         Task<TEntity> GetAsync(dynamic id, IDbTransaction transaction = null);
 
         /// <summary>
+        /// 根据表达式查询单条记录
+        /// </summary>
+        /// <param name="where"></param>
+        /// <param name="transaction"></param>
+        /// <returns></returns>
+        Task<TEntity> GetAsync(Expression<Func<TEntity,bool>> where, IDbTransaction transaction = null);
+
+        /// <summary>
         /// 分页查询
         /// </summary>
         /// <param name="paging">分页</param>
         /// <param name="where">过滤条件</param>
         /// <param name="transaction">事务</param>
         /// <returns></returns>
-        Task<List<TEntity>> PaginationAsync(Paging paging, Expression<Func<TEntity, bool>> where = null, IDbTransaction transaction = null);
+        Task<List<TEntity>> PaginationAsync(Paging paging = null, Expression<Func<TEntity, bool>> where = null, IDbTransaction transaction = null);
     }
 }

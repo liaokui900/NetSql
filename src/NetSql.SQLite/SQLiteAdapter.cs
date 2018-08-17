@@ -39,7 +39,7 @@ namespace NetSql.SQLite
             var sql = new StringBuilder($"SELECT {columns} FROM ");
             sql.AppendFormat(" {0} ", AppendQuote(tableName));
             AppendQueryWhere(sql, queryWhere);
-            if (!sort.IsNull())
+            if (sort.NotNull())
             {
                 sql.AppendFormat(" {0} ", sort);
             }

@@ -38,7 +38,7 @@ namespace NetSql.SqlAdapter
 
             var sql = new StringBuilder($"SELECT {columns} FROM {AppendQuote(tableName)} ");
             AppendQueryWhere(sql, queryWhere);
-            if (!sort.IsNull())
+            if (sort.NotNull())
             {
                 sql.AppendFormat(" {0} ", sort);
             }

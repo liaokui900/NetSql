@@ -29,9 +29,9 @@ namespace NetSql.MySql
             if (columns.IsNull())
                 columns = "*";
 
-            var sb = new StringBuilder($"SELECT SQL_CALC_FOUND_ROWS {columns} FROM {AppendQuote(tableName)} ");
+            var sb = new StringBuilder($"SELECT {columns} FROM {AppendQuote(tableName)} ");
             AppendQueryWhere(sb, queryWhere);
-            if (!sort.IsNull())
+            if (sort.NotNull())
             {
                 sb.AppendFormat(" {0} ", sort);
             }

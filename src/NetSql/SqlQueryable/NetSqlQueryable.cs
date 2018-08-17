@@ -59,6 +59,14 @@ namespace NetSql.SqlQueryable
             return this;
         }
 
+        public INetSqlQueryable<TEntity> WhereIf(bool isAdd, Expression<Func<TEntity, bool>> expression)
+        {
+            if (isAdd)
+                Where(expression);
+
+            return this;
+        }
+
         public INetSqlQueryable<TEntity> OrderBy<TKey>(Expression<Func<TEntity, TKey>> expression, SortType sortType = SortType.Asc)
         {
             if (expression == null)
@@ -138,7 +146,7 @@ namespace NetSql.SqlQueryable
 
         public Task<long> Count()
         {
-            var sql = $"SELECT COUNT(*) FROM {_sqlAdapter.AppendQuote(_descriptor.TableName)} {WhereSql}";
+            var sql = $"SELECT COUNT(*) FROM {_sqlAdapter.AppendQuote(_descriptor.TableName)} {WhereSql};";
             return _dbSet.ExecuteScalarAsync<long>(sql, _transaction);
         }
 

@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using NetSql.Pagination;
-using NetSql.SQLite;
 using NetSql.Test.Common;
 using NetSql.Test.Common.Model;
 using NetSql.Test.Common.Repository;
@@ -13,13 +11,13 @@ namespace NetSql.MySql.Test
 {
     public class RepositoryTest
     {
-        private readonly BlogDbContext _dbContext;
         private readonly IArticleRepository _repository;
 
         public RepositoryTest()
         {
-            _dbContext = new BlogDbContext(new SQLiteDbContextOptions("Filename=./Database/Test.db"));
-            _repository = new ArticleRepository(_dbContext);
+            //var dbContext = new BlogDbContext(new SQLiteDbContextOptions("Filename=./Database/Test.db"));
+            var dbContext = new BlogDbContext(new MySqlDbContextOptions("Server=192.168.8.100;Database=blog;Uid=root;Pwd=oldli!@#123;Allow User Variables=True;charset=utf8;"));
+            _repository = new ArticleRepository(dbContext);
         }
 
         [Fact]

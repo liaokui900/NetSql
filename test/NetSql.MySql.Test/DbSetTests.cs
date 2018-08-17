@@ -17,7 +17,8 @@ namespace NetSql.MySql.Test
 
         public DbSetTests()
         {
-            _dbContext = new BlogDbContext(new SQLiteDbContextOptions("Filename=./Database/Test.db"));
+            //_dbContext = new BlogDbContext(new SQLiteDbContextOptions("Filename=./Database/Test.db"));
+            _dbContext = new BlogDbContext(new MySqlDbContextOptions("Server=192.168.8.100;Database=blog;Uid=root;Pwd=oldli!@#123;Allow User Variables=True;charset=utf8;"));
             _dbSet = _dbContext.Set<Article>();
 
             //预热
@@ -123,12 +124,12 @@ namespace NetSql.MySql.Test
             Assert.Equal(19, list.Count);
         }
 
-        [Fact]
-        public void WhereTest()
+        [Theory]
+        [InlineData(1)]
+        public void WhereTest(int id)
         {
             var query = _dbSet.Find();
-            query.Where(m => m.Id > 200);
-            query.Where(m => m.Id < 300);
+            query.WhereIf(id > 1, m => m.Id > 200);
 
             var list = query.ToListAsync();
 
@@ -140,7 +141,7 @@ namespace NetSql.MySql.Test
         {
             var query = _dbSet.Find(m => m.Id > 200 && m.Id < 1000).OrderBy(m => m.Id, SortType.Desc);
             var sql = query.ToSql();
-            var list =await query.ToListAsync();
+            var list = await query.ToListAsync();
 
             Assert.Equal(99, list.Count);
         }
@@ -219,6 +220,16 @@ namespace NetSql.MySql.Test
         public void ContainsTest()
         {
             var list = _dbSet.Find(m => m.Title1.Contains("11")).ToListAsync().Result;
+
+            Assert.NotEmpty(list);
+        }
+
+        [Fact]
+        public async void EqualsTest()
+        {
+            var query = _dbSet.Find(m => m.Id.Equals(1));
+            var sql = query.ToSql();
+            var list = await query.ToListAsync();
 
             Assert.NotEmpty(list);
         }

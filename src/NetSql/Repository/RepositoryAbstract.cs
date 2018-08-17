@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using NetSql.Entities;
 using NetSql.Pagination;
+using NetSql.SqlQueryable;
 
 namespace NetSql.Repository
 {
@@ -75,9 +76,27 @@ namespace NetSql.Repository
             return Db.GetAsync(id, transaction);
         }
 
-        public virtual async Task<List<TEntity>> PaginationAsync(Paging paging, Expression<Func<TEntity, bool>> where = null, IDbTransaction transaction = null)
+        public Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> @where, IDbTransaction transaction = null)
         {
-            var query = Db.Find(where).Limit(paging.Skip, paging.Size);
+            return Db.Find(where).FirstAsync();
+        }
+
+        public virtual Task<List<TEntity>> PaginationAsync(Paging paging = null, Expression<Func<TEntity, bool>> where = null, IDbTransaction transaction = null)
+        {
+            var query = Db.Find(where);
+
+            return PaginationAsync(paging, query, transaction);
+        }
+
+        protected async Task<List<TEntity>> PaginationAsync(Paging paging = null, INetSqlQueryable<TEntity> query = null, IDbTransaction transaction = null)
+        {
+            if (paging == null)
+                paging = new Paging();
+
+            if (query == null)
+                query = Db.Find();
+
+            query.Limit(paging.Skip, paging.Size);
 
             //排序
             foreach (var sort in paging.OrderBy)
@@ -91,5 +110,6 @@ namespace NetSql.Repository
             paging.TotalCount = await count;
             return await list;
         }
+
     }
 }

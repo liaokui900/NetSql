@@ -16,7 +16,17 @@ namespace NetSql.SqlQueryable
         /// <summary>
         /// 过滤
         /// </summary>
+        /// <param name="expression">过滤条件</param>
+        /// <returns></returns>
         INetSqlQueryable<TEntity> Where(Expression<Func<TEntity, bool>> expression);
+
+        /// <summary>
+        /// 过滤
+        /// </summary>
+        /// <param name="isAdd">是否添加</param>
+        /// <param name="expression">条件</param>
+        /// <returns></returns>
+        INetSqlQueryable<TEntity> WhereIf(bool isAdd, Expression<Func<TEntity, bool>> expression);
 
         /// <summary>
         /// 排序
