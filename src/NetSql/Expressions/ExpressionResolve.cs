@@ -170,6 +170,9 @@ namespace NetSql.Expressions
                 case ExpressionType.Or:
                     _sqlBuilder.Append(" OR ");
                     break;
+                case ExpressionType.NotEqual:
+                    _sqlBuilder.Append("<>");
+                    break;
             }
 
             Resolve(binaryExp.Right);

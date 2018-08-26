@@ -15,12 +15,6 @@ namespace NetSql
     public interface IDbSet<TEntity> where TEntity : Entity, new()
     {
         /// <summary>
-        /// 打开一个事务
-        /// </summary>
-        /// <returns></returns>
-        IDbTransaction BeginTransaction();
-
-        /// <summary>
         /// 新增
         /// </summary>
         /// <param name="entity">实体</param>

@@ -17,15 +17,17 @@ namespace NetSql.Repository
     public abstract class RepositoryAbstract<TEntity> : IRepository<TEntity> where TEntity : Entity, new()
     {
         protected readonly IDbSet<TEntity> Db;
+        protected readonly IDbContext _dbContext;
 
         protected RepositoryAbstract(IDbContext dbContext)
         {
+            _dbContext = dbContext;
             Db = dbContext.Set<TEntity>();
         }
 
-        public IDbTransaction BeginTransaction()
+        public async Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> where, IDbTransaction transaction = null)
         {
-            return Db.BeginTransaction();
+            return await Db.Find(where).Count() > 0;
         }
 
         public virtual Task<bool> AddAsync(TEntity entity, IDbTransaction transaction = null)
@@ -42,7 +44,7 @@ namespace NetSql.Repository
                 return Task.FromResult(false);
 
             if (transaction == null)
-                transaction = BeginTransaction();
+                transaction = _dbContext.BeginTransaction();
 
             try
             {
@@ -57,6 +59,7 @@ namespace NetSql.Repository
             catch
             {
                 transaction.Rollback();
+                transaction.Connection.Close();
                 throw;
             }
         }

@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Text;
 using NetSql.Enums;
 using NetSql.SqlAdapter;
@@ -123,8 +124,7 @@ namespace NetSql.Entities
 
                 foreach (var col in columns)
                 {
-                    sb.AppendFormat("{0}={1}", _sqlAdapter.AppendQuote(col.Name),
-                        _sqlAdapter.AppendParameter(col.PropertyInfo.Name));
+                    sb.AppendFormat("{0}={1}", _sqlAdapter.AppendQuote(col.Name), _sqlAdapter.AppendParameter(col.PropertyInfo.Name));
                     sb.Append(",");
                 }
 

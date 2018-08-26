@@ -5,7 +5,6 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using NetSql.Entities;
 using NetSql.Pagination;
-using NetSql.SqlQueryable;
 
 namespace NetSql.Repository
 {
@@ -16,10 +15,12 @@ namespace NetSql.Repository
     public interface IRepository<TEntity> where TEntity : Entity, new()
     {
         /// <summary>
-        /// 打开一个事务
+        /// 判断是否存在
         /// </summary>
+        /// <param name="where"></param>
+        /// <param name="transaction"></param>
         /// <returns></returns>
-        IDbTransaction BeginTransaction();
+        Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> where, IDbTransaction transaction = null);
 
         /// <summary>
         /// 新增
@@ -52,6 +53,7 @@ namespace NetSql.Repository
         /// <param name="transaction">事务</param>
         /// <returns></returns>
         Task<bool> UpdateAsync(TEntity entity, IDbTransaction transaction = null);
+
 
         /// <summary>
         /// 根据主键查询

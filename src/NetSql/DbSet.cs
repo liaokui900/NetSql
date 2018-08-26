@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Dapper;
 using NetSql.Entities;
 using NetSql.Enums;
-using NetSql.Expressions;
 using NetSql.Internal;
 using NetSql.SqlAdapter;
 using NetSql.SqlQueryable;
@@ -38,11 +37,6 @@ namespace NetSql
         }
 
         #endregion
-
-        public IDbTransaction BeginTransaction()
-        {
-            return _context.BeginTransaction();
-        }
 
         public async Task<bool> InsertAsync(TEntity entity, IDbTransaction transaction = null)
         {

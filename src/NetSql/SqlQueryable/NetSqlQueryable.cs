@@ -84,7 +84,7 @@ namespace NetSql.SqlQueryable
         {
             if (sort != null)
             {
-                var col = _descriptor.Columns.FirstOrDefault(m => m.Name.Equals(sort.OrderBy) || m.PropertyInfo.Name.Equals(sort.OrderBy));
+                var col = _descriptor.Columns.FirstOrDefault(m => m.Name.Equals(sort.OrderBy, StringComparison.OrdinalIgnoreCase) || m.PropertyInfo.Name.Equals(sort.OrderBy, StringComparison.OrdinalIgnoreCase));
                 if (col == null)
                     throw new ArgumentException("排序列无效");
 
