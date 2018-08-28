@@ -329,7 +329,7 @@ var b = await _dbSet.Find(m => m.Id == 1000).Update(m => new Article
 var list = await _dbSet.Find(m => m.Id > 100 && m.Id < 120).ToList();
 ```
 
-## 其它用法
+## 3、特性
 
 ### 表别名以及列名
 
@@ -357,3 +357,233 @@ public class Article : EntityBase
 ### 指定主键
 
 可以通过`KeyAttribute`来指定某个字段为主键
+
+## 4、泛型仓储(Repository)
+
+平时开发时用到伪 DDD 比较多，所以框架提供了一个泛型仓储接口`IRepository`以及一个抽象实现`RepositoryAbstract`
+
+```csharp
+/// <summary>
+/// 判断是否存在
+/// </summary>
+/// <param name="where"></param>
+/// <param name="transaction"></param>
+/// <returns></returns>
+Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> where, IDbTransaction transaction = null);
+
+/// <summary>
+/// 新增
+/// </summary>
+/// <param name="entity">实体</param>
+/// <param name="transaction">事务</param>
+/// <returns></returns>
+Task<bool> AddAsync(TEntity entity, IDbTransaction transaction = null);
+
+/// <summary>
+/// 批量新增
+/// </summary>
+/// <param name="list"></param>
+/// <param name="transaction"></param>
+/// <returns></returns>
+Task<bool> AddAsync(List<TEntity> list, IDbTransaction transaction = null);
+
+/// <summary>
+/// 删除
+/// </summary>
+/// <param name="id"></param>
+/// <param name="transaction"></param>
+/// <returns></returns>
+Task<bool> DeleteAsync(dynamic id, IDbTransaction transaction = null);
+
+/// <summary>
+/// 更新
+/// </summary>
+/// <param name="entity">实体</param>
+/// <param name="transaction">事务</param>
+/// <returns></returns>
+Task<bool> UpdateAsync(TEntity entity, IDbTransaction transaction = null);
+
+/// <summary>
+/// 根据主键查询
+/// </summary>
+/// <param name="id"></param>
+/// <param name="transaction"></param>
+/// <returns></returns>
+Task<TEntity> GetAsync(dynamic id, IDbTransaction transaction = null);
+
+/// <summary>
+/// 根据表达式查询单条记录
+/// </summary>
+/// <param name="where"></param>
+/// <param name="transaction"></param>
+/// <returns></returns>
+Task<TEntity> GetAsync(Expression<Func<TEntity,bool>> where, IDbTransaction transaction = null);
+
+/// <summary>
+/// 分页查询
+/// </summary>
+/// <param name="paging">分页</param>
+/// <param name="where">过滤条件</param>
+/// <param name="transaction">事务</param>
+/// <returns></returns>
+Task<List<TEntity>> PaginationAsync(Paging paging = null, Expression<Func<TEntity, bool>> where = null, IDbTransaction transaction = null);
+```
+
+`RepositoryAbstract`中包含实体对应的数据集`IDbSet`以及数据上限为`IDbContext`
+
+```csharp
+protected readonly IDbSet<TEntity> Db;
+protected readonly IDbContext DbContext;
+
+protected RepositoryAbstract(IDbContext dbContext)
+{
+    DbContext = dbContext;
+    Db = dbContext.Set<TEntity>();
+}
+```
+
+对于事务，建议使用工作单元`IUnitOfWork`
+
+```csharp
+public interface IUnitOfWork
+{
+    /// <summary>
+    /// 打开一个事务
+    /// </summary>
+    /// <returns></returns>
+    IDbTransaction BeginTransaction();
+
+    /// <summary>
+    /// 提交
+    /// </summary>
+    /// <returns></returns>
+    void Commit();
+
+    /// <summary>
+    /// 回滚
+    /// </summary>
+    void Rollback();
+}
+```
+
+项目已经包含了一个实现`UnitOfWork`
+
+## 6、仓储使用方法
+
+### 6.1、定义仓储
+
+```csharp
+public interface IArticleRepository : IRepository<Article>
+{
+}
+```
+
+### 6.2、创建仓储实例
+
+```csharp
+private readonly IArticleRepository _repository;
+
+public RepositoryTest()
+{
+    var dbContext = new BlogDbContext(new SQLiteDbContextOptions("Filename=./Database/Test.db"));
+    _repository = new ArticleRepository(dbContext);
+}
+```
+
+### 6.3、新增
+
+```csharp
+[Fact]
+public async void AddTest()
+{
+    var article = new Article
+    {
+        Title1 = "test",
+        Category = Category.Blog,
+        Summary = "这是一篇测试文章",
+        Body = "这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章",
+        ReadCount = 10,
+        IsDeleted = true,
+        CreatedTime = DateTime.Now
+    };
+
+    await _repository.AddAsync(article);
+
+    Assert.True(article.Id > 0);
+}
+```
+
+### 6.4、批量增加
+
+```csharp
+[Fact]
+public void BatchInsertTest()
+{
+    var list = new List<Article>();
+    for (var i = 0; i < 10000; i++)
+    {
+        var article = new Article
+        {
+            Title1 = "test" + i,
+            Category = i % 3 == 1 ? Category.Blog : Category.Movie,
+            Summary = "这是一篇测试文章",
+            Body = "这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章这是一篇测试文章",
+            ReadCount = 10,
+            IsDeleted = i % 2 == 0,
+            CreatedTime = DateTime.Now
+        };
+        list.Add(article);
+    }
+    var sw = new Stopwatch();
+    sw.Start();
+
+    _repository.AddAsync(list);
+
+    sw.Stop();
+    var s = sw.ElapsedMilliseconds;
+
+    Assert.True(s > 0);
+}
+```
+
+### 6.5、删除
+
+```csharp
+[Fact]
+public async void DeleteTest()
+{
+    var b = await _repository.DeleteAsync(2);
+
+    Assert.True(b);
+}
+```
+
+### 6.6、修改
+
+```csharp
+[Fact]
+public async void UpdateTest()
+{
+    var article = await _repository.GetAsync(2);
+    article.Title1 = "修改测试";
+
+    var b = await _repository.UpdateAsync(article);
+
+    Assert.True(b);
+}
+```
+
+### 6.7、分页查询
+
+```csharp
+[Fact]
+public async void PaginationTest()
+{
+    var paging = new Paging(1, 20);
+    var list = await _repository.PaginationAsync(paging, m => m.Id > 1000);
+
+    Assert.True(paging.TotalCount > 0);
+}
+```
+
+# 未完待续~

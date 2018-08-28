@@ -69,7 +69,7 @@ namespace NetSql.Repository
         /// <param name="where"></param>
         /// <param name="transaction"></param>
         /// <returns></returns>
-        Task<TEntity> GetAsync(Expression<Func<TEntity,bool>> where, IDbTransaction transaction = null);
+        Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> where, IDbTransaction transaction = null);
 
         /// <summary>
         /// 分页查询
