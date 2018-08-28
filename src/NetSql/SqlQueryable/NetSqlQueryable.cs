@@ -11,7 +11,6 @@ using NetSql.Expressions;
 using NetSql.Internal;
 using NetSql.Pagination;
 using NetSql.SqlAdapter;
-using NetSql.SqlQueryable;
 
 namespace NetSql.SqlQueryable
 {
@@ -150,14 +149,20 @@ namespace NetSql.SqlQueryable
             return _dbSet.ExecuteScalarAsync<long>(sql, _transaction);
         }
 
-        public async Task<TEntity> FirstAsync()
+        public async Task<bool> Exists()
+        {
+            var sql = $"SELECT 1 FROM {_sqlAdapter.AppendQuote(_descriptor.TableName)} {WhereSql};";
+            return await _dbSet.ExecuteScalarAsync<int>(sql, _transaction) > 0;
+        }
+
+        public async Task<TEntity> First()
         {
             _take = 1;
             _skip = 0;
-            return (await ToListAsync()).FirstOrDefault();
+            return (await ToList()).FirstOrDefault();
         }
 
-        public async Task<bool> DeleteAsync()
+        public async Task<bool> Delete()
         {
             Check.NotNull(_whereExpression, nameof(_whereExpression), "删除条件不能为空");
             Check.NotNull(WhereSql, nameof(WhereSql), "删除条件不能为空");
@@ -182,7 +187,7 @@ namespace NetSql.SqlQueryable
             return await _dbSet.ExecuteAsync(sql, null, _transaction) > 0;
         }
 
-        public async Task<List<TEntity>> ToListAsync()
+        public async Task<List<TEntity>> ToList()
         {
             var list = await _dbSet.QueryAsync<TEntity>(ToSql());
             return list.ToList();

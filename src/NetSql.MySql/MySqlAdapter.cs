@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Text;
 using NetSql.Internal;
-using NetSql.Pagination;
 using NetSql.SqlAdapter;
 
 namespace NetSql.MySql

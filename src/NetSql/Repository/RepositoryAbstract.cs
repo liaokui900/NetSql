@@ -17,17 +17,17 @@ namespace NetSql.Repository
     public abstract class RepositoryAbstract<TEntity> : IRepository<TEntity> where TEntity : Entity, new()
     {
         protected readonly IDbSet<TEntity> Db;
-        protected readonly IDbContext _dbContext;
+        protected readonly IDbContext DbContext;
 
         protected RepositoryAbstract(IDbContext dbContext)
         {
-            _dbContext = dbContext;
+            DbContext = dbContext;
             Db = dbContext.Set<TEntity>();
         }
 
-        public async Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> where, IDbTransaction transaction = null)
+        public Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> where, IDbTransaction transaction = null)
         {
-            return await Db.Find(where).Count() > 0;
+            return Db.Find(where).Exists();
         }
 
         public virtual Task<bool> AddAsync(TEntity entity, IDbTransaction transaction = null)
@@ -44,7 +44,7 @@ namespace NetSql.Repository
                 return Task.FromResult(false);
 
             if (transaction == null)
-                transaction = _dbContext.BeginTransaction();
+                transaction = DbContext.BeginTransaction();
 
             try
             {
@@ -81,7 +81,7 @@ namespace NetSql.Repository
 
         public Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> @where, IDbTransaction transaction = null)
         {
-            return Db.Find(where).FirstAsync();
+            return Db.Find(where).First();
         }
 
         public virtual Task<List<TEntity>> PaginationAsync(Paging paging = null, Expression<Func<TEntity, bool>> where = null, IDbTransaction transaction = null)
@@ -108,7 +108,7 @@ namespace NetSql.Repository
             }
 
             var count = query.Count();
-            var list = query.ToListAsync();
+            var list = query.ToList();
 
             paging.TotalCount = await count;
             return await list;

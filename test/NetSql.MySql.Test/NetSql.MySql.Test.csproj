@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <None Update="Database\Test.db">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

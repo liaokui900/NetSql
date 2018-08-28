@@ -189,6 +189,8 @@ namespace NetSql.Expressions
                 _sqlBuilder.AppendFormat("'{0}'", constantExp.Value);
             else if (exp.Type == typeof(bool))
                 _sqlBuilder.AppendFormat("{0}", constantExp.Value.ToBool().ToIntString());
+            else if (exp.Type.IsEnum)
+                _sqlBuilder.AppendFormat("{0}", constantExp.Value.ToInt());
             else
                 _sqlBuilder.Append(constantExp.Value);
         }

@@ -1,5 +1,4 @@
-﻿using NetSql.Pagination;
-using System.Text;
+﻿using System.Text;
 
 namespace NetSql.SqlAdapter
 {

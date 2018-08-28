@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using NetSql.Enums;
-using NetSql.SQLite;
 using NetSql.Test.Common;
 using NetSql.Test.Common.Model;
 using Xunit;
@@ -22,7 +20,7 @@ namespace NetSql.MySql.Test
             _dbSet = _dbContext.Set<Article>();
 
             //预热
-            _dbSet.Find().FirstAsync();
+            _dbSet.Find().First();
         }
 
         [Fact]
@@ -88,7 +86,7 @@ namespace NetSql.MySql.Test
         [Fact]
         public async void UpdateTest()
         {
-            var article = await _dbSet.Find().FirstAsync();
+            var article = await _dbSet.Find().First();
             article.Title1 = "修改测试";
 
             var b = await _dbSet.UpdateAsync(article);
@@ -119,7 +117,7 @@ namespace NetSql.MySql.Test
         [Fact]
         public void FindTest()
         {
-            var list = _dbSet.Find(m => m.Id > 100 && m.Id < 120).ToListAsync().Result;
+            var list = _dbSet.Find(m => m.Id > 100 && m.Id < 120).ToList().Result;
 
             Assert.Equal(19, list.Count);
         }
@@ -131,7 +129,7 @@ namespace NetSql.MySql.Test
             var query = _dbSet.Find();
             query.WhereIf(id > 1, m => m.Id > 200);
 
-            var list = query.ToListAsync();
+            var list = query.ToList();
 
             Assert.Equal(99, list.Result.Count);
         }
@@ -141,7 +139,7 @@ namespace NetSql.MySql.Test
         {
             var query = _dbSet.Find(m => m.Id > 200 && m.Id < 1000).OrderBy(m => m.Id, SortType.Desc);
             var sql = query.ToSql();
-            var list = await query.ToListAsync();
+            var list = await query.ToList();
 
             Assert.Equal(99, list.Count);
         }
@@ -149,7 +147,7 @@ namespace NetSql.MySql.Test
         [Fact]
         public void FirstTest()
         {
-            var article = _dbSet.Find(m => m.Id > 100 && m.Id < 120).FirstAsync().Result;
+            var article = _dbSet.Find(m => m.Id > 100 && m.Id < 120).First().Result;
 
             Assert.NotNull(article);
         }
@@ -157,7 +155,7 @@ namespace NetSql.MySql.Test
         [Fact]
         public void LimitTest()
         {
-            var list = _dbSet.Find(m => m.Id > 100 && m.Id < 120).Limit(5, 10).ToListAsync().Result;
+            var list = _dbSet.Find(m => m.Id > 100 && m.Id < 120).Limit(5, 10).ToList().Result;
 
             Assert.Equal(10, list.Count);
         }
@@ -195,7 +193,7 @@ namespace NetSql.MySql.Test
         public void InTest()
         {
             var ids = new[] { 100, 200 };
-            var list = _dbSet.Find(m => ids.Contains(m.Id)).ToListAsync().Result;
+            var list = _dbSet.Find(m => ids.Contains(m.Id)).ToList().Result;
 
             Assert.Equal(2, list.Count);
         }
@@ -203,7 +201,7 @@ namespace NetSql.MySql.Test
         [Fact]
         public void StartsWithTest()
         {
-            var list = _dbSet.Find(m => m.Title1.StartsWith("test11")).ToListAsync().Result;
+            var list = _dbSet.Find(m => m.Title1.StartsWith("test11")).ToList().Result;
 
             Assert.NotEmpty(list);
         }
@@ -211,7 +209,7 @@ namespace NetSql.MySql.Test
         [Fact]
         public void EndsWithTest()
         {
-            var list = _dbSet.Find(m => m.Title1.EndsWith("11")).ToListAsync().Result;
+            var list = _dbSet.Find(m => m.Title1.EndsWith("11")).ToList().Result;
 
             Assert.NotEmpty(list);
         }
@@ -219,7 +217,7 @@ namespace NetSql.MySql.Test
         [Fact]
         public void ContainsTest()
         {
-            var list = _dbSet.Find(m => m.Title1.Contains("11")).ToListAsync().Result;
+            var list = _dbSet.Find(m => m.Title1.Contains("11")).ToList().Result;
 
             Assert.NotEmpty(list);
         }
@@ -229,7 +227,7 @@ namespace NetSql.MySql.Test
         {
             var query = _dbSet.Find(m => m.Id.Equals(1));
             var sql = query.ToSql();
-            var list = await query.ToListAsync();
+            var list = await query.ToList();
 
             Assert.NotEmpty(list);
         }
@@ -239,7 +237,7 @@ namespace NetSql.MySql.Test
         {
             var query = _dbSet.Find().Select(m => new { m.Id, m.Title1 }).Limit(0, 10);
             var sql = query.ToSql();
-            var list = await query.ToListAsync();
+            var list = await query.ToList();
 
             Assert.NotEmpty(list);
         }

@@ -81,16 +81,22 @@ namespace NetSql.SqlQueryable
         Task<long> Count();
 
         /// <summary>
+        /// 判断是否存在
+        /// </summary>
+        /// <returns></returns>
+        Task<bool> Exists();
+
+        /// <summary>
         /// 查询第一条数据
         /// </summary>
         /// <returns></returns>
-        Task<TEntity> FirstAsync();
+        Task<TEntity> First();
 
         /// <summary>
         /// 删除
         /// </summary>
         /// <returns></returns>
-        Task<bool> DeleteAsync();
+        Task<bool> Delete();
 
         /// <summary>
         /// 更新
@@ -103,7 +109,7 @@ namespace NetSql.SqlQueryable
         /// 
         /// </summary>
         /// <returns></returns>
-        Task<List<TEntity>> ToListAsync();
+        Task<List<TEntity>> ToList();
 
         /// <summary>
         /// 输出Sql语句

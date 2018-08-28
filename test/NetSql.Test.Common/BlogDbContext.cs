@@ -1,5 +1,4 @@
-﻿using NetSql.SQLite;
-using NetSql.Test.Common.Model;
+﻿using NetSql.Test.Common.Model;
 
 namespace NetSql.Test.Common
 {
