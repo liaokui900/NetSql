@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Linq;
 using NetSql.Enums;
+using NetSql.SQLite;
 using NetSql.Test.Common;
 using NetSql.Test.Common.Model;
 using Xunit;
@@ -15,8 +16,7 @@ namespace NetSql.MySql.Test
 
         public DbSetTests()
         {
-            //_dbContext = new BlogDbContext(new SQLiteDbContextOptions("Filename=./Database/Test.db"));
-            _dbContext = new BlogDbContext(new MySqlDbContextOptions("Server=192.168.8.100;Database=blog;Uid=root;Pwd=oldli!@#123;Allow User Variables=True;charset=utf8;"));
+            _dbContext = new BlogDbContext(new SQLiteDbContextOptions("Filename=./Database/Test.db"));
             _dbSet = _dbContext.Set<Article>();
 
             //预热
@@ -84,6 +84,15 @@ namespace NetSql.MySql.Test
         }
 
         [Fact]
+        public async void DeleteWhereTest()
+        {
+            var b = await _dbSet.Find(m => m.Id > 10)
+                .Where(m => m.CreatedTime > DateTime.Now).Delete();
+
+            Assert.True(b);
+        }
+
+        [Fact]
         public async void UpdateTest()
         {
             var article = await _dbSet.Find().First();
@@ -115,9 +124,17 @@ namespace NetSql.MySql.Test
         }
 
         [Fact]
-        public void FindTest()
+        public async void GetWehreTest()
         {
-            var list = _dbSet.Find(m => m.Id > 100 && m.Id < 120).ToList().Result;
+            var article = await _dbSet.Find().Where(m => m.Id > 1).First();
+
+            Assert.NotNull(article);
+        }
+
+        [Fact]
+        public async void FindTest()
+        {
+            var list = await _dbSet.Find(m => m.Id > 100 && m.Id < 120).ToList();
 
             Assert.Equal(19, list.Count);
         }
@@ -126,8 +143,7 @@ namespace NetSql.MySql.Test
         [InlineData(1)]
         public void WhereTest(int id)
         {
-            var query = _dbSet.Find();
-            query.WhereIf(id > 1, m => m.Id > 200);
+            var query = _dbSet.Find().WhereIf(id > 1, m => m.Id > 200);
 
             var list = query.ToList();
 
@@ -138,7 +154,6 @@ namespace NetSql.MySql.Test
         public async void OrderByTest()
         {
             var query = _dbSet.Find(m => m.Id > 200 && m.Id < 1000).OrderBy(m => m.Id, SortType.Desc);
-            var sql = query.ToSql();
             var list = await query.ToList();
 
             Assert.Equal(99, list.Count);
@@ -236,7 +251,6 @@ namespace NetSql.MySql.Test
         public async void SelectTest()
         {
             var query = _dbSet.Find().Select(m => new { m.Id, m.Title1 }).Limit(0, 10);
-            var sql = query.ToSql();
             var list = await query.ToList();
 
             Assert.NotEmpty(list);
